@@ -23,8 +23,8 @@ export function SoundProvider({ children }: { children: ReactNode }) {
   const [enabled, setEnabled] = useState(false);
   const [currentTrack] = useState<SoundTrack>("rain");
 
-  const toggle = useCallback(() => {
-    soundManager.toggle(currentTrack);
+  const toggle = useCallback(async () => {
+    await soundManager.toggle(currentTrack);
     setEnabled(soundManager.enabled);
   }, [currentTrack]);
 

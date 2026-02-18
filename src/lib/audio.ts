@@ -1,32 +1,44 @@
-import { Howl } from "howler";
-
 export type SoundTrack = "rain" | "nature" | "gentle";
 
 class SoundManager {
-  private sounds: Map<SoundTrack, Howl> = new Map();
+  private sounds: Map<SoundTrack, unknown> = new Map();
   private currentTrack: SoundTrack | null = null;
   private _enabled = false;
   private _volume = 0.3;
+  private Howl: typeof import("howler").Howl | null = null;
 
-  private getOrCreateSound(track: SoundTrack): Howl {
-    if (!this.sounds.has(track)) {
-      const sound = new Howl({
-        src: [`/sounds/ambient-${track}.mp3`],
-        loop: true,
-        volume: 0,
-        html5: true,
-      });
-      this.sounds.set(track, sound);
-    }
-    return this.sounds.get(track)!;
+  private async loadHowler() {
+    if (this.Howl) return this.Howl;
+    if (typeof window === "undefined") return null;
+    const mod = await import("howler");
+    this.Howl = mod.Howl;
+    return this.Howl;
   }
 
-  play(track: SoundTrack = "rain") {
+  private async getOrCreateSound(track: SoundTrack) {
+    if (this.sounds.has(track)) return this.sounds.get(track) as import("howler").Howl;
+
+    const HowlClass = await this.loadHowler();
+    if (!HowlClass) return null;
+
+    const sound = new HowlClass({
+      src: [`/sounds/ambient-${track}.mp3`],
+      loop: true,
+      volume: 0,
+      html5: true,
+    });
+    this.sounds.set(track, sound);
+    return sound;
+  }
+
+  async play(track: SoundTrack = "rain") {
     if (this.currentTrack && this.currentTrack !== track) {
       this.pause();
     }
 
-    const sound = this.getOrCreateSound(track);
+    const sound = await this.getOrCreateSound(track);
+    if (!sound) return;
+
     this.currentTrack = track;
     this._enabled = true;
 
@@ -38,7 +50,7 @@ class SoundManager {
 
   pause() {
     if (!this.currentTrack) return;
-    const sound = this.sounds.get(this.currentTrack);
+    const sound = this.sounds.get(this.currentTrack) as import("howler").Howl | undefined;
     if (sound) {
       sound.fade(sound.volume(), 0, 1500);
       setTimeout(() => {
@@ -59,7 +71,7 @@ class SoundManager {
   setVolume(v: number) {
     this._volume = Math.max(0, Math.min(1, v));
     if (this.currentTrack) {
-      const sound = this.sounds.get(this.currentTrack);
+      const sound = this.sounds.get(this.currentTrack) as import("howler").Howl | undefined;
       if (sound) sound.volume(this._volume);
     }
   }
@@ -73,7 +85,7 @@ class SoundManager {
   }
 
   destroy() {
-    this.sounds.forEach((sound) => sound.unload());
+    this.sounds.forEach((sound) => (sound as import("howler").Howl).unload());
     this.sounds.clear();
     this.currentTrack = null;
     this._enabled = false;
