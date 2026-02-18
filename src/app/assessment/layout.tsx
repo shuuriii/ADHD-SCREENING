@@ -4,6 +4,8 @@ import { AssessmentProvider } from "@/contexts/AssessmentContext";
 import { SoundProvider } from "@/contexts/SoundContext";
 import Header from "@/components/ui/Header";
 import SoundToggle from "@/components/ui/SoundToggle";
+import AnswerBurst from "@/components/assessment/AnswerBurst";
+import CursorGlow from "@/components/ui/CursorGlow";
 
 export default function AssessmentLayout({
   children,
@@ -13,6 +15,8 @@ export default function AssessmentLayout({
   return (
     <AssessmentProvider>
       <SoundProvider>
+        <CursorGlow />
+        <AnswerBurst />
         <Header />
         <div className="min-h-screen bg-gradient-to-b from-primary-50 via-white to-calm-neutral">
           {children}

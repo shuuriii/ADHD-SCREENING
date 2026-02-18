@@ -7,7 +7,7 @@ import { AlertTriangle } from "lucide-react";
 
 export default function CTASection() {
   return (
-    <section className="py-20 px-4">
+    <section className="py-20 px-4 relative z-10">
       <div className="max-w-2xl mx-auto text-center">
         <motion.div
           className="bg-amber-50 border border-amber-200 rounded-2xl p-6 mb-10"

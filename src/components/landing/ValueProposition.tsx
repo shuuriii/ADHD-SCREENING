@@ -38,7 +38,7 @@ const itemVariants = {
 
 export default function ValueProposition() {
   return (
-    <section className="py-20 px-4 bg-calm-neutral/50">
+    <section className="py-20 px-4 relative z-10 bg-white/60 backdrop-blur-sm">
       <div className="max-w-4xl mx-auto">
         <motion.h2
           className="text-2xl sm:text-3xl font-bold text-center text-foreground mb-12"
