@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useMemo } from "react";
+import { useState, useEffect } from "react";
 
 interface Particle {
   id: number;
@@ -21,18 +21,26 @@ const COLORS = [
   "bg-calm-teal",
 ];
 
+function generateParticles(count: number): Particle[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    size: 4 + Math.random() * 16,
+    duration: 10 + Math.random() * 12,
+    delay: Math.random() * 8,
+    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    opacity: 0.15 + Math.random() * 0.25,
+  }));
+}
+
 export default function FloatingParticles({ count = 25 }: { count?: number }) {
-  const particles = useMemo<Particle[]>(() => {
-    return Array.from({ length: count }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      size: 4 + Math.random() * 16,
-      duration: 10 + Math.random() * 12,
-      delay: Math.random() * 8,
-      color: COLORS[Math.floor(Math.random() * COLORS.length)],
-      opacity: 0.15 + Math.random() * 0.25,
-    }));
+  const [particles, setParticles] = useState<Particle[]>([]);
+
+  useEffect(() => {
+    setParticles(generateParticles(count));
   }, [count]);
+
+  if (particles.length === 0) return null;
 
   return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
