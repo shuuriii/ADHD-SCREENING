@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useContext, useEffect, useState } from "react";
 import { AssessmentContext } from "@/contexts/AssessmentContext";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, supabaseConfigured } from "@/lib/supabase/client";
 import { signInWithGoogle, signOut } from "@/lib/supabase/auth";
 import type { User } from "@supabase/supabase-js";
 
@@ -16,6 +16,7 @@ export default function Header() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
+    if (!supabaseConfigured) return;
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => setUser(data.user ?? null));
     const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {

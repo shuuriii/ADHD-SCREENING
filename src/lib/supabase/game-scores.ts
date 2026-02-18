@@ -1,4 +1,4 @@
-import { createClient } from "./client";
+import { createClient, supabaseConfigured } from "./client";
 import type { GoNoGoScores } from "@/lib/gonogo-scoring";
 
 export async function saveGameScore(
@@ -6,6 +6,7 @@ export async function saveGameScore(
   sessionId: string,
   userId?: string | null
 ): Promise<void> {
+  if (!supabaseConfigured) return;
   const supabase = createClient();
   const { error } = await supabase.from("game_scores").insert({
     session_id: sessionId,

@@ -1,4 +1,4 @@
-import { createClient } from "./client";
+import { createClient, supabaseConfigured } from "./client";
 import type { Gender, PetPreference } from "@/questionnaire/types";
 
 export interface ProfileInsert {
@@ -11,6 +11,7 @@ export interface ProfileInsert {
 }
 
 export async function saveProfile(data: ProfileInsert): Promise<void> {
+  if (!supabaseConfigured) return;
   const supabase = createClient();
   const { error } = await supabase.from("profiles").insert(data);
   if (error) {
