@@ -47,11 +47,18 @@ export default function CTASection() {
             Take the screening now and download a detailed report of your
             results.
           </p>
-          <Link href="/assessment/intake">
-            <Button size="lg" className="text-lg px-10">
-              Begin Assessment
-            </Button>
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link href="/assessment/intake">
+              <Button size="lg" className="text-lg px-10">
+                Begin Assessment
+              </Button>
+            </Link>
+            <Link href="/assessment/focus-task">
+              <Button variant="secondary" size="lg" className="text-lg px-10">
+                Try the Focus Task
+              </Button>
+            </Link>
+          </div>
         </motion.div>
       </div>
     </section>

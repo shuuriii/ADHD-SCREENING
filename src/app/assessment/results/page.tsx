@@ -9,10 +9,13 @@ import Disclaimer from "@/components/results/Disclaimer";
 import ScoreSummary from "@/components/results/ScoreSummary";
 import PresentationTypeCard from "@/components/results/PresentationType";
 import DSM5CriteriaCard from "@/components/results/DSM5Criteria";
+import ASRSPartACard from "@/components/results/ASRSPartACard";
 import GenderInsights from "@/components/results/GenderInsights";
 import Recommendations from "@/components/results/Recommendations";
 import Button from "@/components/ui/Button";
-import { RotateCcw, Download } from "lucide-react";
+import Card from "@/components/ui/Card";
+import Link from "next/link";
+import { RotateCcw, Download, Target } from "lucide-react";
 
 const PDFDownloadButton = dynamic(
   () => import("@/components/report/PDFDownloadButton"),
@@ -30,15 +33,17 @@ const PDFDownloadButton = dynamic(
 export default function ResultsPage() {
   const router = useRouter();
   const { state, dispatch } = useAssessment();
-  const { results, userData } = state;
+  const { instrument, results, asrsResult, userData } = state;
+
+  const activeResult = instrument === "asrs" ? asrsResult : results;
 
   useEffect(() => {
-    if (!results) {
+    if (!activeResult) {
       router.replace("/assessment/intake");
     }
-  }, [results, router]);
+  }, [activeResult, router]);
 
-  if (!results) return null;
+  if (!activeResult) return null;
 
   const handleStartNew = () => {
     dispatch({ type: "RESET" });
@@ -54,25 +59,59 @@ export default function ResultsPage() {
         <h1 className="text-3xl font-bold text-foreground mb-1">
           Your Results
         </h1>
+        <p className="text-xs text-muted mb-1">
+          {instrument === "asrs" ? "ASRS v1.1 Screener" : "DSM-5 Assessment"}
+        </p>
         {userData.name && userData.name !== "Anonymous" && (
           <p className="text-muted mb-2">
             {userData.name}, age {userData.age}
           </p>
         )}
         <p className="text-xs text-muted mb-8">
-          Completed {new Date(results.completedAt).toLocaleDateString()}
+          Completed {new Date(activeResult.completedAt).toLocaleDateString()}
         </p>
       </motion.div>
 
       <Disclaimer />
-      <ScoreSummary domainA={results.domainA} domainB={results.domainB} />
-      <PresentationTypeCard result={results.presentationType} />
-      <DSM5CriteriaCard
-        criteria={results.dsm5Criteria}
-        clinicalNote={results.interpretation.clinicalNote}
-      />
-      <GenderInsights insights={results.interpretation.genderInsights} />
-      <Recommendations items={results.interpretation.recommendations} />
+      <ScoreSummary domainA={activeResult.domainA} domainB={activeResult.domainB} />
+      <PresentationTypeCard result={activeResult.presentationType} />
+
+      {instrument === "asrs" && asrsResult ? (
+        <ASRSPartACard result={asrsResult} />
+      ) : results ? (
+        <DSM5CriteriaCard
+          criteria={results.dsm5Criteria}
+          clinicalNote={results.interpretation.clinicalNote}
+        />
+      ) : null}
+
+      <GenderInsights insights={activeResult.interpretation.genderInsights} />
+      <Recommendations items={activeResult.interpretation.recommendations} />
+
+      <motion.div
+        className="bg-white rounded-2xl shadow-sm border border-border/50 p-5 mb-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+      >
+        <div className="flex items-start gap-3">
+          <Target size={20} className="text-primary-600 mt-0.5 shrink-0" />
+          <div>
+            <h3 className="font-semibold text-foreground mb-1">
+              Want an additional cognitive measure?
+            </h3>
+            <p className="text-sm text-muted mb-3">
+              Try the Go/No-Go attention task — 15 minutes, no account needed.
+              It measures visual attention and impulse control with objective behavioral data.
+            </p>
+            <Link href="/assessment/focus-task">
+              <Button variant="secondary" size="sm">
+                Start Focus Task
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </motion.div>
 
       <motion.div
         className="flex flex-col sm:flex-row gap-3 mt-8"
@@ -80,7 +119,9 @@ export default function ResultsPage() {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.7 }}
       >
-        <PDFDownloadButton results={results} />
+        {results && instrument === "dsm5" && (
+          <PDFDownloadButton results={results} />
+        )}
         <Button variant="secondary" onClick={handleStartNew}>
           <RotateCcw size={16} className="mr-2" />
           Start New Assessment

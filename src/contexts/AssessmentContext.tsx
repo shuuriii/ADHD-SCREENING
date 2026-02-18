@@ -12,7 +12,9 @@ import type {
   Gender,
   UserData,
   AssessmentResult,
+  ASRSResult,
   FollowUpQuestion,
+  InstrumentType,
 } from "@/questionnaire/types";
 import {
   calculateDomainScore,
@@ -21,11 +23,19 @@ import {
   interpretDSM5Results,
   determineFollowUps,
 } from "@/questionnaire/scoring";
+import { asrsQuestions } from "@/questionnaire/asrs-questions";
+import {
+  calculateASRSScores,
+  determineASRSPresentation,
+  interpretASRSResults,
+  evaluateASRSCriteria,
+} from "@/questionnaire/asrs-scoring";
 
 type Phase = "intake" | "main" | "context" | "followups" | "results";
 
 interface AssessmentState {
   currentPhase: Phase;
+  instrument: InstrumentType;
   userData: UserData;
   responses: Record<string, LikertValue>;
   contextResponses: Record<string, string>;
@@ -33,10 +43,12 @@ interface AssessmentState {
   currentQuestionIndex: number;
   followUpQuestions: FollowUpQuestion[];
   results: AssessmentResult | null;
+  asrsResult: ASRSResult | null;
 }
 
 type Action =
   | { type: "SET_USER_DATA"; payload: UserData }
+  | { type: "SET_INSTRUMENT"; payload: InstrumentType }
   | { type: "RECORD_RESPONSE"; payload: { questionId: string; value: LikertValue } }
   | { type: "RECORD_CONTEXT_RESPONSE"; payload: { questionId: string; value: string } }
   | { type: "RECORD_FOLLOWUP_RESPONSE"; payload: { questionId: string; value: LikertValue } }
@@ -46,11 +58,13 @@ type Action =
   | { type: "SET_QUESTION_INDEX"; payload: number }
   | { type: "SET_FOLLOWUPS"; payload: FollowUpQuestion[] }
   | { type: "SET_RESULTS"; payload: AssessmentResult }
+  | { type: "SET_ASRS_RESULTS"; payload: ASRSResult }
   | { type: "RESET" }
   | { type: "HYDRATE"; payload: AssessmentState };
 
 const initialState: AssessmentState = {
   currentPhase: "intake",
+  instrument: "dsm5",
   userData: { name: "", gender: null, age: null },
   responses: {},
   contextResponses: {},
@@ -58,12 +72,15 @@ const initialState: AssessmentState = {
   currentQuestionIndex: 0,
   followUpQuestions: [],
   results: null,
+  asrsResult: null,
 };
 
 function reducer(state: AssessmentState, action: Action): AssessmentState {
   switch (action.type) {
     case "SET_USER_DATA":
       return { ...state, userData: action.payload, currentPhase: "main" };
+    case "SET_INSTRUMENT":
+      return { ...state, instrument: action.payload };
     case "RECORD_RESPONSE":
       return {
         ...state,
@@ -103,6 +120,8 @@ function reducer(state: AssessmentState, action: Action): AssessmentState {
       return { ...state, followUpQuestions: action.payload };
     case "SET_RESULTS":
       return { ...state, results: action.payload, currentPhase: "results" };
+    case "SET_ASRS_RESULTS":
+      return { ...state, asrsResult: action.payload, currentPhase: "results" };
     case "RESET":
       return initialState;
     case "HYDRATE":
@@ -116,12 +135,13 @@ interface AssessmentContextValue {
   state: AssessmentState;
   dispatch: React.Dispatch<Action>;
   calculateAndSetResults: () => void;
+  calculateAndSetASRSResults: () => void;
   computeFollowUps: () => void;
 }
 
 const AssessmentContext = createContext<AssessmentContextValue | null>(null);
 
-const SESSION_KEY = "adhd-assessment-session";
+const SESSION_KEY = "adhd-assessment-v2";
 const HISTORY_KEY = "adhd-assessment-history";
 
 export function AssessmentProvider({ children }: { children: ReactNode }) {
@@ -169,6 +189,7 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
 
     const result: AssessmentResult = {
       assessmentId: crypto.randomUUID(),
+      instrument: "dsm5",
       userData: state.userData,
       domainA,
       domainB,
@@ -182,34 +203,72 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
     };
 
     dispatch({ type: "SET_RESULTS", payload: result });
+    saveToHistory(result);
+    clearSession();
+  };
 
-    // Save to history in localStorage
-    try {
-      const historyRaw = localStorage.getItem(HISTORY_KEY);
-      const history: AssessmentResult[] = historyRaw
-        ? JSON.parse(historyRaw)
-        : [];
-      history.unshift(result);
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-    } catch {
-      // localStorage unavailable
-    }
+  const calculateAndSetASRSResults = () => {
+    const asrsScores = calculateASRSScores(state.responses, asrsQuestions);
+    const presentationType = determineASRSPresentation(asrsScores.partAHighRisk);
+    const criteria = evaluateASRSCriteria(asrsScores.partAHighRisk, state.contextResponses);
+    const interpretation = interpretASRSResults(
+      asrsScores,
+      presentationType,
+      state.contextResponses,
+      state.userData.gender,
+      state.followUpResponses
+    );
 
-    // Clear session
-    try {
-      sessionStorage.removeItem(SESSION_KEY);
-    } catch {
-      // ignore
-    }
+    const result: ASRSResult = {
+      assessmentId: crypto.randomUUID(),
+      instrument: "asrs",
+      userData: state.userData,
+      domainA: asrsScores.inattention,
+      domainB: asrsScores.hyperactivity,
+      presentationType,
+      dsm5Criteria: criteria,
+      interpretation,
+      partAShadedCount: asrsScores.partAShadedCount,
+      partAHighRisk: asrsScores.partAHighRisk,
+      responses: state.responses,
+      contextResponses: state.contextResponses,
+      followUpResponses: state.followUpResponses,
+      completedAt: new Date().toISOString(),
+    };
+
+    dispatch({ type: "SET_ASRS_RESULTS", payload: result });
+    saveToHistory(result);
+    clearSession();
   };
 
   return (
     <AssessmentContext.Provider
-      value={{ state, dispatch, calculateAndSetResults, computeFollowUps }}
+      value={{ state, dispatch, calculateAndSetResults, calculateAndSetASRSResults, computeFollowUps }}
     >
       {children}
     </AssessmentContext.Provider>
   );
+}
+
+function saveToHistory(result: AssessmentResult | ASRSResult) {
+  try {
+    const historyRaw = localStorage.getItem(HISTORY_KEY);
+    const history: (AssessmentResult | ASRSResult)[] = historyRaw
+      ? JSON.parse(historyRaw)
+      : [];
+    history.unshift(result);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  } catch {
+    // localStorage unavailable
+  }
+}
+
+function clearSession() {
+  try {
+    sessionStorage.removeItem(SESSION_KEY);
+  } catch {
+    // ignore
+  }
 }
 
 export function useAssessment() {

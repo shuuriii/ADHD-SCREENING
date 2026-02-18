@@ -10,8 +10,8 @@ const geistSans = Geist({
 export const metadata: Metadata = {
   title: "fayth.life — ADHD Screening Tool",
   description:
-    "Evidence-based ADHD screening for adults. DSM-5 validated, completely private, free.",
-  keywords: ["ADHD", "screening", "assessment", "DSM-5", "adult ADHD"],
+    "Evidence-based ADHD screening for adults. DSM-5 and ASRS v1.1 assessments, plus a Go/No-Go cognitive task. Completely private, free.",
+  keywords: ["ADHD", "screening", "assessment", "DSM-5", "ASRS", "adult ADHD", "cognitive test"],
 };
 
 export default function RootLayout({

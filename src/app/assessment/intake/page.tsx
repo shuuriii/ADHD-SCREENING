@@ -7,7 +7,7 @@ import { useAssessment } from "@/contexts/AssessmentContext";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { Lock } from "lucide-react";
-import type { Gender } from "@/questionnaire/types";
+import type { Gender, InstrumentType } from "@/questionnaire/types";
 
 export default function IntakePage() {
   const router = useRouter();
@@ -15,6 +15,7 @@ export default function IntakePage() {
   const [name, setName] = useState("");
   const [gender, setGender] = useState<Gender | "">("");
   const [age, setAge] = useState("");
+  const [instrument, setInstrument] = useState<InstrumentType>("dsm5");
   const [errors, setErrors] = useState<string[]>([]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -30,6 +31,7 @@ export default function IntakePage() {
       return;
     }
 
+    dispatch({ type: "SET_INSTRUMENT", payload: instrument });
     dispatch({
       type: "SET_USER_DATA",
       payload: {
@@ -129,6 +131,46 @@ export default function IntakePage() {
               placeholder="18+"
               className="w-full px-4 py-3 rounded-xl border border-border bg-white text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-3">
+              Screening instrument
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setInstrument("dsm5")}
+                className={`p-4 rounded-xl border-2 text-left transition-all ${
+                  instrument === "dsm5"
+                    ? "border-primary-500 bg-primary-50 ring-1 ring-primary-500"
+                    : "border-border bg-white hover:border-primary-300"
+                }`}
+              >
+                <span className="block font-semibold text-foreground text-sm">
+                  DSM-5
+                </span>
+                <span className="block text-xs text-muted mt-1">
+                  30 questions — full clinical domains
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setInstrument("asrs")}
+                className={`p-4 rounded-xl border-2 text-left transition-all ${
+                  instrument === "asrs"
+                    ? "border-primary-500 bg-primary-50 ring-1 ring-primary-500"
+                    : "border-border bg-white hover:border-primary-300"
+                }`}
+              >
+                <span className="block font-semibold text-foreground text-sm">
+                  ASRS v1.1
+                </span>
+                <span className="block text-xs text-muted mt-1">
+                  18 questions — WHO-validated screener
+                </span>
+              </button>
+            </div>
           </div>
 
           <div className="flex items-start gap-3 bg-primary-50 rounded-xl p-4">

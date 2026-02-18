@@ -2,11 +2,13 @@ export type Domain = "A" | "B";
 export type Gender = "female" | "male" | "non-binary" | "prefer-not-to-say";
 export type LikertValue = 0 | 1 | 2 | 3 | 4;
 export type Severity = "high" | "moderate" | "mild" | "low";
+export type InstrumentType = "dsm5" | "asrs";
 export type PresentationType =
   | "combined"
   | "inattentive"
   | "hyperactive"
   | "subthreshold";
+export type ASRSRiskLevel = "high_risk" | "low_risk";
 
 export interface LikertScale {
   0: string;
@@ -94,12 +96,52 @@ export interface UserData {
 
 export interface AssessmentResult {
   assessmentId: string;
+  instrument: "dsm5";
   userData: UserData;
   domainA: DomainScore;
   domainB: DomainScore;
   presentationType: PresentationResult;
   dsm5Criteria: DSM5Criteria;
   interpretation: Interpretation;
+  responses: Record<string, LikertValue>;
+  contextResponses: Record<string, string>;
+  followUpResponses: Record<string, LikertValue>;
+  completedAt: string;
+}
+
+export interface ASRSQuestion {
+  id: string;
+  questionNumber: number;
+  part: "A" | "B";
+  domain: "Inattention" | "Hyperactivity";
+  text: string;
+  shadedThreshold: number[];
+}
+
+export interface ASRSPresentationResult {
+  type: ASRSRiskLevel;
+  label: string;
+  description: string;
+}
+
+export interface ASRSScores {
+  partAShadedCount: number;
+  partAHighRisk: boolean;
+  inattention: DomainScore;
+  hyperactivity: DomainScore;
+}
+
+export interface ASRSResult {
+  assessmentId: string;
+  instrument: "asrs";
+  userData: UserData;
+  domainA: DomainScore;
+  domainB: DomainScore;
+  presentationType: ASRSPresentationResult;
+  dsm5Criteria: DSM5Criteria;
+  interpretation: Interpretation;
+  partAShadedCount: number;
+  partAHighRisk: boolean;
   responses: Record<string, LikertValue>;
   contextResponses: Record<string, string>;
   followUpResponses: Record<string, LikertValue>;

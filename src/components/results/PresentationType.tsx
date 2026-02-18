@@ -1,19 +1,21 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { PresentationResult } from "@/questionnaire/types";
+import type { PresentationResult, ASRSPresentationResult } from "@/questionnaire/types";
 
 const typeColors: Record<string, string> = {
   combined: "border-l-severity-high",
   inattentive: "border-l-calm-blue",
   hyperactive: "border-l-severity-moderate",
   subthreshold: "border-l-severity-low",
+  high_risk: "border-l-severity-high",
+  low_risk: "border-l-severity-low",
 };
 
 export default function PresentationTypeCard({
   result,
 }: {
-  result: PresentationResult;
+  result: PresentationResult | ASRSPresentationResult;
 }) {
   return (
     <motion.div

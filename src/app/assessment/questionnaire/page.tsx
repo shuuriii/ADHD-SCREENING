@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { useAssessment } from "@/contexts/AssessmentContext";
 import { dsm5Questions } from "@/questionnaire/dsm5-questions";
+import { asrsQuestions } from "@/questionnaire/asrs-questions";
 import { contextQuestions } from "@/questionnaire/context-questions";
 import type { LikertValue } from "@/questionnaire/types";
 import LikertScale from "@/components/assessment/LikertScale";
@@ -16,22 +17,34 @@ import MilestoneAnimation from "@/components/assessment/MilestoneAnimation";
 import Button from "@/components/ui/Button";
 import { ChevronLeft } from "lucide-react";
 
-const DOMAIN_A_COUNT = 15;
-const TOTAL_MAIN = 30;
 const TOTAL_CONTEXT = 3;
 
 export default function QuestionnairePage() {
   const router = useRouter();
-  const { state, dispatch, calculateAndSetResults, computeFollowUps } =
-    useAssessment();
+  const {
+    state,
+    dispatch,
+    calculateAndSetResults,
+    calculateAndSetASRSResults,
+    computeFollowUps,
+  } = useAssessment();
   const {
     currentPhase,
     currentQuestionIndex,
+    instrument,
     responses,
     contextResponses,
     followUpResponses,
     followUpQuestions,
   } = state;
+
+  const questions = useMemo(
+    () => (instrument === "asrs" ? asrsQuestions : dsm5Questions),
+    [instrument]
+  );
+  const TOTAL_MAIN = questions.length;
+  const MILESTONE_INDEX =
+    instrument === "asrs" ? 5 : 14; // Part A ends at Q6 (index 5), Domain A at Q15 (index 14)
 
   const [showPhaseTransition, setShowPhaseTransition] = useState(false);
   const [phaseTransitionData, setPhaseTransitionData] = useState({
@@ -69,8 +82,8 @@ export default function QuestionnairePage() {
         payload: { questionId, value },
       });
 
-      // Check for milestone: Domain A complete
-      if (currentQuestionIndex === DOMAIN_A_COUNT - 1) {
+      // Check for milestone
+      if (currentQuestionIndex === MILESTONE_INDEX) {
         setShowMilestone(true);
         setTimeout(() => setShowMilestone(false), 1500);
       }
@@ -89,7 +102,7 @@ export default function QuestionnairePage() {
         }
       }, 350);
     },
-    [currentQuestionIndex, dispatch]
+    [currentQuestionIndex, dispatch, TOTAL_MAIN, MILESTONE_INDEX]
   );
 
   const handleContextResponse = useCallback(
@@ -116,6 +129,15 @@ export default function QuestionnairePage() {
     [currentQuestionIndex, dispatch, computeFollowUps]
   );
 
+  const finishAssessment = useCallback(() => {
+    if (instrument === "asrs") {
+      calculateAndSetASRSResults();
+    } else {
+      calculateAndSetResults();
+    }
+    router.push("/assessment/results");
+  }, [instrument, calculateAndSetASRSResults, calculateAndSetResults, router]);
+
   const handleFollowUpResponse = useCallback(
     (questionId: string, value: LikertValue) => {
       dispatch({
@@ -127,9 +149,7 @@ export default function QuestionnairePage() {
         if (currentQuestionIndex < followUpQuestions.length - 1) {
           dispatch({ type: "NEXT_QUESTION" });
         } else {
-          // All done — calculate results
-          calculateAndSetResults();
-          router.push("/assessment/results");
+          finishAssessment();
         }
       }, 350);
     },
@@ -137,8 +157,7 @@ export default function QuestionnairePage() {
       currentQuestionIndex,
       followUpQuestions.length,
       dispatch,
-      calculateAndSetResults,
-      router,
+      finishAssessment,
     ]
   );
 
@@ -147,12 +166,10 @@ export default function QuestionnairePage() {
     if (currentPhase === "main") {
       dispatch({ type: "SET_PHASE", payload: "context" });
     } else if (currentPhase === "context") {
-      // Check if there are follow-ups
       if (state.followUpQuestions.length > 0 || followUpQuestions.length > 0) {
         dispatch({ type: "SET_PHASE", payload: "followups" });
       } else {
-        calculateAndSetResults();
-        router.push("/assessment/results");
+        finishAssessment();
       }
     }
   }, [
@@ -160,8 +177,7 @@ export default function QuestionnairePage() {
     dispatch,
     state.followUpQuestions.length,
     followUpQuestions.length,
-    calculateAndSetResults,
-    router,
+    finishAssessment,
   ]);
 
   const handlePrevious = () => {
@@ -174,6 +190,12 @@ export default function QuestionnairePage() {
   const getPhaseLabel = () => {
     switch (currentPhase) {
       case "main": {
+        if (instrument === "asrs") {
+          const q = asrsQuestions[currentQuestionIndex];
+          return q?.part === "A"
+            ? "Part A — Quick Screener"
+            : "Part B — Full Screener";
+        }
         const q = dsm5Questions[currentQuestionIndex];
         return q?.domain === "A"
           ? "Domain A — Inattention"
@@ -204,14 +226,14 @@ export default function QuestionnairePage() {
   // Render current question
   const renderQuestion = () => {
     if (currentPhase === "main") {
-      const question = dsm5Questions[currentQuestionIndex];
+      const question = questions[currentQuestionIndex];
       if (!question) return null;
       return (
         <QuestionCard
           questionKey={question.id}
           questionNumber={question.questionNumber}
           text={question.text}
-          helpText={question.helpText}
+          helpText={"helpText" in question ? (question as { helpText: string }).helpText : undefined}
         >
           <LikertScale
             questionId={question.id}
@@ -245,9 +267,7 @@ export default function QuestionnairePage() {
     if (currentPhase === "followups") {
       const question = followUpQuestions[currentQuestionIndex];
       if (!question) {
-        // No follow-ups, go straight to results
-        calculateAndSetResults();
-        router.push("/assessment/results");
+        finishAssessment();
         return null;
       }
       return (
