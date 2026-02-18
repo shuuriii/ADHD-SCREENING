@@ -9,6 +9,8 @@ import Card from "@/components/ui/Card";
 import { Lock } from "lucide-react";
 import Image from "next/image";
 import type { Gender, InstrumentType, PetPreference } from "@/questionnaire/types";
+import { saveProfile } from "@/lib/supabase/profiles";
+import { createClient } from "@/lib/supabase/client";
 
 export default function IntakePage() {
   const router = useRouter();
@@ -33,15 +35,36 @@ export default function IntakePage() {
       return;
     }
 
+    const resolvedName = name.trim() || "Anonymous";
+
+    // Get or create a persistent session ID for this user
+    let sessionId = localStorage.getItem("fayth-session-id");
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      localStorage.setItem("fayth-session-id", sessionId);
+    }
+
     dispatch({ type: "SET_INSTRUMENT", payload: instrument });
     dispatch({
       type: "SET_USER_DATA",
       payload: {
-        name: name.trim() || "Anonymous",
+        name: resolvedName,
         gender: gender as Gender,
         age: parseInt(age),
         petPreference: petPreference,
       },
+    });
+
+    // Save to Supabase with optional user_id if signed in (fire-and-forget)
+    createClient().auth.getUser().then(({ data }) => {
+      saveProfile({
+        name: name.trim() || null,
+        age: parseInt(age),
+        gender: gender as Gender,
+        pet_preference: petPreference,
+        session_id: sessionId,
+        user_id: data.user?.id ?? null,
+      });
     });
 
     router.push("/assessment/questionnaire");
@@ -75,11 +98,52 @@ export default function IntakePage() {
           )}
 
           <div>
+            <label className="block text-sm font-medium text-foreground mb-0.5">
+              Are you a cat person or a dog person?
+            </label>
+            <p className="text-xs text-muted mb-3">
+              Pick one — this sets your profile picture (dp) throughout the app.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              {(["cat", "dog"] as PetPreference[]).map((pet) => (
+                <button
+                  key={pet}
+                  type="button"
+                  onClick={() => setPetPreference(pet)}
+                  className={`relative flex flex-col items-center gap-3 p-4 rounded-2xl border-2 transition-all ${
+                    petPreference === pet
+                      ? "border-primary-500 bg-primary-50 ring-1 ring-primary-500"
+                      : "border-border bg-white hover:border-primary-300"
+                  }`}
+                >
+                  <div className="w-20 h-20 rounded-full overflow-hidden ring-2 ring-white shadow-md">
+                    <Image
+                      src={`/images/${pet}-avatar.png`}
+                      alt={pet === "cat" ? "Cat avatar" : "Dog avatar"}
+                      width={80}
+                      height={80}
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
+                  <span className="text-sm font-semibold text-foreground capitalize">
+                    {pet} person
+                  </span>
+                  {petPreference === pet && (
+                    <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center text-white text-xs">
+                      ✓
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
             <label
               htmlFor="name"
               className="block text-sm font-medium text-foreground mb-1.5"
             >
-              Name{" "}
+              How do we call you?{" "}
               <span className="text-muted font-normal">(optional)</span>
             </label>
             <input
@@ -87,7 +151,7 @@ export default function IntakePage() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Your name"
+              placeholder="Your name or nickname"
               className="w-full px-4 py-3 rounded-xl border border-border bg-white text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow"
             />
           </div>
@@ -176,49 +240,12 @@ export default function IntakePage() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-3">
-              Are you a cat person or a dog person?
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              {(["cat", "dog"] as PetPreference[]).map((pet) => (
-                <button
-                  key={pet}
-                  type="button"
-                  onClick={() => setPetPreference(pet)}
-                  className={`relative flex flex-col items-center gap-3 p-4 rounded-2xl border-2 transition-all ${
-                    petPreference === pet
-                      ? "border-primary-500 bg-primary-50 ring-1 ring-primary-500"
-                      : "border-border bg-white hover:border-primary-300"
-                  }`}
-                >
-                  <div className="w-20 h-20 rounded-full overflow-hidden ring-2 ring-white shadow-md">
-                    <Image
-                      src={`/images/${pet}-avatar.png`}
-                      alt={pet === "cat" ? "Cat avatar" : "Dog avatar"}
-                      width={80}
-                      height={80}
-                      className="object-cover w-full h-full"
-                    />
-                  </div>
-                  <span className="text-sm font-semibold text-foreground capitalize">
-                    {pet} person
-                  </span>
-                  {petPreference === pet && (
-                    <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center text-white text-xs">
-                      ✓
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
           <div className="flex items-start gap-3 bg-primary-50 rounded-xl p-4">
             <Lock size={16} className="text-primary-600 mt-0.5 shrink-0" />
             <p className="text-xs text-primary-800 leading-relaxed">
-              Your data stays on your device. We don&apos;t collect or send any
-              personal information to external servers.
+              Basic profile info (name, age, gender) is saved securely to
+              personalize your experience. Assessment responses stay on your
+              device only.
             </p>
           </div>
 
