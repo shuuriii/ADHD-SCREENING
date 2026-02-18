@@ -1,6 +1,7 @@
 import { dsm5Questions } from "./dsm5-questions";
 import { femaleFollowups } from "./followups/female";
 import { maleFollowups } from "./followups/male";
+import { generalFollowups } from "./followups/general";
 import type {
   Domain,
   DomainScore,
@@ -141,6 +142,17 @@ export function interpretDSM5Results(
         "This pattern is commonly seen in male ADHD presentation"
       );
     }
+  } else if (gender === "non-binary" || gender === "prefer-not-to-say") {
+    if (domainA.severity === "high" || domainA.severity === "moderate") {
+      interpretation.genderInsights.push(
+        "Your inattention scores are elevated — ADHD can present differently across individuals regardless of gender"
+      );
+    }
+    if (domainB.severity === "high" || domainB.severity === "moderate") {
+      interpretation.genderInsights.push(
+        "Your hyperactivity/impulsivity scores are elevated — a clinician can help distinguish presentation patterns"
+      );
+    }
   }
 
   // Clinical note based on criteria
@@ -192,12 +204,14 @@ export function determineFollowUps(
   responses: Record<string, LikertValue>,
   gender: Gender | null
 ): FollowUpQuestion[] {
-  if (!gender || (gender !== "male" && gender !== "female")) {
-    return [];
-  }
+  if (!gender) return [];
 
   const followUpBank =
-    gender === "female" ? femaleFollowups : maleFollowups;
+    gender === "female"
+      ? femaleFollowups
+      : gender === "male"
+        ? maleFollowups
+        : generalFollowups;
 
   return followUpBank.filter((followUp) => {
     const triggeredCount = followUp.triggerQuestions.reduce((count, qId) => {

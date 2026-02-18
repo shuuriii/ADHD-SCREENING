@@ -12,13 +12,26 @@ import DSM5CriteriaCard from "@/components/results/DSM5Criteria";
 import ASRSPartACard from "@/components/results/ASRSPartACard";
 import GenderInsights from "@/components/results/GenderInsights";
 import Recommendations from "@/components/results/Recommendations";
+import FocusTaskCard from "@/components/results/FocusTaskCard";
 import Button from "@/components/ui/Button";
-import Card from "@/components/ui/Card";
 import Link from "next/link";
 import { RotateCcw, Download, Target } from "lucide-react";
 
 const PDFDownloadButton = dynamic(
   () => import("@/components/report/PDFDownloadButton"),
+  {
+    ssr: false,
+    loading: () => (
+      <Button disabled>
+        <Download size={16} className="mr-2" />
+        Preparing PDF...
+      </Button>
+    ),
+  }
+);
+
+const ASRSPDFDownloadButton = dynamic(
+  () => import("@/components/report/ASRSPDFDownloadButton"),
   {
     ssr: false,
     loading: () => (
@@ -88,6 +101,8 @@ export default function ResultsPage() {
       <GenderInsights insights={activeResult.interpretation.genderInsights} />
       <Recommendations items={activeResult.interpretation.recommendations} />
 
+      <FocusTaskCard />
+
       <motion.div
         className="bg-white rounded-2xl shadow-sm border border-border/50 p-5 mb-6"
         initial={{ opacity: 0, y: 20 }}
@@ -119,8 +134,11 @@ export default function ResultsPage() {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.7 }}
       >
-        {results && instrument === "dsm5" && (
+        {instrument === "dsm5" && results && (
           <PDFDownloadButton results={results} />
+        )}
+        {instrument === "asrs" && asrsResult && (
+          <ASRSPDFDownloadButton results={asrsResult} />
         )}
         <Button variant="secondary" onClick={handleStartNew}>
           <RotateCcw size={16} className="mr-2" />

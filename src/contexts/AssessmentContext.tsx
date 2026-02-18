@@ -9,7 +9,6 @@ import {
 } from "react";
 import type {
   LikertValue,
-  Gender,
   UserData,
   AssessmentResult,
   ASRSResult,
@@ -204,7 +203,6 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
 
     dispatch({ type: "SET_RESULTS", payload: result });
     saveToHistory(result);
-    clearSession();
   };
 
   const calculateAndSetASRSResults = () => {
@@ -238,7 +236,6 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
 
     dispatch({ type: "SET_ASRS_RESULTS", payload: result });
     saveToHistory(result);
-    clearSession();
   };
 
   return (
@@ -260,14 +257,6 @@ function saveToHistory(result: AssessmentResult | ASRSResult) {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
   } catch {
     // localStorage unavailable
-  }
-}
-
-function clearSession() {
-  try {
-    sessionStorage.removeItem(SESSION_KEY);
-  } catch {
-    // ignore
   }
 }
 

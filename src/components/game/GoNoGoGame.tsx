@@ -243,10 +243,14 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
               <div className="font-mono text-[11px] text-[#5a6180] leading-relaxed">Do nothing. Hold your response completely.</div>
             </div>
           </div>
-          <p className="font-mono text-[13px] text-[#5a6180] leading-relaxed max-w-[400px] mb-9">
+          <p className="font-mono text-[13px] text-[#5a6180] leading-relaxed max-w-[400px] mb-4">
             A square appears in one cell of a 4x4 grid.<br />
             Yellow = tap fast. Dark = stay still.<br />
             Speed matters, but so does accuracy.
+          </p>
+          <p className="font-mono text-[11px] text-[#5a6180] leading-relaxed max-w-[400px] mb-9">
+            <span className="text-[#4f8ef7]">Keyboard:</span> press Spacebar to respond.{" "}
+            <span className="text-[#4f8ef7]">Touch:</span> tap anywhere on the grid.
           </p>
           <button onClick={() => setScreen("practice-intro")} className="bg-[#f5c842] text-[#0d0f14] font-bold text-[15px] px-12 py-4 rounded-lg hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(245,200,66,0.3)] transition-all">
             Got it — start practice
@@ -292,6 +296,8 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
           <div className="font-mono text-[11px] text-[#5a6180] tracking-wider h-5">{trialInfo}</div>
           <div
             className="grid grid-cols-4 gap-1.5 p-3.5 bg-[#13161e] border border-[#252a38] rounded-[14px] cursor-pointer select-none"
+            role="application"
+            aria-label="Go/No-Go game grid. Press spacebar or tap to respond to yellow squares."
             onClick={tap}
             onTouchStart={(e) => { e.preventDefault(); tap(); }}
           >
