@@ -7,7 +7,8 @@ import { useAssessment } from "@/contexts/AssessmentContext";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { Lock } from "lucide-react";
-import type { Gender, InstrumentType } from "@/questionnaire/types";
+import Image from "next/image";
+import type { Gender, InstrumentType, PetPreference } from "@/questionnaire/types";
 
 export default function IntakePage() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function IntakePage() {
   const [gender, setGender] = useState<Gender | "">("");
   const [age, setAge] = useState("");
   const [instrument, setInstrument] = useState<InstrumentType>("dsm5");
+  const [petPreference, setPetPreference] = useState<PetPreference | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -38,6 +40,7 @@ export default function IntakePage() {
         name: name.trim() || "Anonymous",
         gender: gender as Gender,
         age: parseInt(age),
+        petPreference: petPreference,
       },
     });
 
@@ -170,6 +173,44 @@ export default function IntakePage() {
                   18 questions — WHO-validated screener
                 </span>
               </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-3">
+              Are you a cat person or a dog person?
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              {(["cat", "dog"] as PetPreference[]).map((pet) => (
+                <button
+                  key={pet}
+                  type="button"
+                  onClick={() => setPetPreference(pet)}
+                  className={`relative flex flex-col items-center gap-3 p-4 rounded-2xl border-2 transition-all ${
+                    petPreference === pet
+                      ? "border-primary-500 bg-primary-50 ring-1 ring-primary-500"
+                      : "border-border bg-white hover:border-primary-300"
+                  }`}
+                >
+                  <div className="w-20 h-20 rounded-full overflow-hidden ring-2 ring-white shadow-md">
+                    <Image
+                      src={`/images/${pet}-avatar.png`}
+                      alt={pet === "cat" ? "Cat avatar" : "Dog avatar"}
+                      width={80}
+                      height={80}
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
+                  <span className="text-sm font-semibold text-foreground capitalize">
+                    {pet} person
+                  </span>
+                  {petPreference === pet && (
+                    <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center text-white text-xs">
+                      ✓
+                    </span>
+                  )}
+                </button>
+              ))}
             </div>
           </div>
 

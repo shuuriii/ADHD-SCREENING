@@ -64,7 +64,7 @@ type Action =
 const initialState: AssessmentState = {
   currentPhase: "intake",
   instrument: "dsm5",
-  userData: { name: "", gender: null, age: null },
+  userData: { name: "", gender: null, age: null, petPreference: null },
   responses: {},
   contextResponses: {},
   followUpResponses: {},
@@ -138,7 +138,7 @@ interface AssessmentContextValue {
   computeFollowUps: () => void;
 }
 
-const AssessmentContext = createContext<AssessmentContextValue | null>(null);
+export const AssessmentContext = createContext<AssessmentContextValue | null>(null);
 
 const SESSION_KEY = "adhd-assessment-v2";
 const HISTORY_KEY = "adhd-assessment-history";

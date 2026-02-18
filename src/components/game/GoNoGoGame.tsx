@@ -13,9 +13,17 @@ const CFG = {
   CELLS: 16,
 } as const;
 
+const HISTORY_KEY = "focus-task-history";
+
+interface FocusTaskEntry {
+  scores: GoNoGoScores;
+  completedAt: string;
+}
+
 type Screen =
   | "welcome"
   | "instructions"
+  | "why-it-matters"
   | "practice-intro"
   | "game"
   | "feedback"
@@ -33,6 +41,25 @@ interface GoNoGoGameProps {
   onComplete?: (scores: GoNoGoScores) => void;
 }
 
+function loadHistory(): FocusTaskEntry[] {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveToHistory(scores: GoNoGoScores) {
+  try {
+    const history = loadHistory();
+    history.unshift({ scores, completedAt: new Date().toISOString() });
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 20))); // keep last 20
+  } catch {
+    // localStorage unavailable
+  }
+}
+
 export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
   const [screen, setScreen] = useState<Screen>("welcome");
   const [trialInfo, setTrialInfo] = useState("");
@@ -41,6 +68,11 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
   const [progress, setProgress] = useState(0);
   const [feedback, setFeedback] = useState<FeedbackData | null>(null);
   const [scores, setScores] = useState<GoNoGoScores | null>(null);
+  const [history, setHistory] = useState<FocusTaskEntry[]>([]);
+
+  useEffect(() => {
+    setHistory(loadHistory());
+  }, []);
 
   const dataRef = useRef<TrialRecord[]>([]);
   const isPracticeRef = useRef(true);
@@ -92,6 +124,8 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
       } else {
         const s = calcGoNoGoScores(dataRef.current);
         setScores(s);
+        saveToHistory(s);
+        setHistory(loadHistory());
         onComplete?.(s);
         setScreen("results");
       }
@@ -192,8 +226,11 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
     return value < threshLow ? "#f87171" : value < threshHigh ? "#f5c842" : "#34d399";
   };
 
+  const lastEntry = history[0];
+
   return (
     <div className="min-h-screen bg-[#0d0f14] text-[#dde3f0] flex items-center justify-center font-sans">
+
       {/* Welcome */}
       {screen === "welcome" && (
         <div className="flex flex-col items-center text-center px-6 py-10 animate-fadeIn">
@@ -207,7 +244,7 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
             A grid-based attention task used in clinical ADHD research.<br />
             No right or wrong answers — just respond naturally.
           </p>
-          <div className="flex gap-9 mb-12">
+          <div className="flex gap-9 mb-8">
             <div>
               <div className="text-[32px] font-extrabold tracking-tight">15<span className="text-base text-[#5a6180]">min</span></div>
               <div className="font-mono text-[10px] text-[#5a6180] uppercase tracking-wider mt-1">Duration</div>
@@ -221,8 +258,42 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
               <div className="font-mono text-[10px] text-[#5a6180] uppercase tracking-wider mt-1">Scores</div>
             </div>
           </div>
+
+          {/* Previous performance */}
+          {lastEntry && (
+            <div className="w-full max-w-[380px] mb-8 p-4 bg-[#13161e] border border-[#252a38] rounded-xl">
+              <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#5a6180] mb-3">
+                Your last attempt — {new Date(lastEntry.completedAt).toLocaleDateString()}
+              </p>
+              <div className="flex justify-center gap-6">
+                <div className="text-center">
+                  <div className="text-[22px] font-extrabold" style={{ color: scoreColor(lastEntry.scores.aqvis, 70, 85) }}>
+                    {lastEntry.scores.aqvis}
+                  </div>
+                  <div className="font-mono text-[9px] text-[#5a6180] uppercase tracking-wider">AQvis</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[22px] font-extrabold" style={{ color: scoreColor(lastEntry.scores.rcqvis, 70, 85) }}>
+                    {lastEntry.scores.rcqvis}
+                  </div>
+                  <div className="font-mono text-[9px] text-[#5a6180] uppercase tracking-wider">RCQvis</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[22px] font-extrabold" style={{ color: scoreColor(lastEntry.scores.icv, 25, 35, true) }}>
+                    {lastEntry.scores.icv}%
+                  </div>
+                  <div className="font-mono text-[9px] text-[#5a6180] uppercase tracking-wider">ICV</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[22px] font-extrabold text-[#dde3f0]">{lastEntry.scores.meanRT}</div>
+                  <div className="font-mono text-[9px] text-[#5a6180] uppercase tracking-wider">RT ms</div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <button onClick={() => setScreen("instructions")} className="bg-[#f5c842] text-[#0d0f14] font-bold text-[15px] px-12 py-4 rounded-lg hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(245,200,66,0.3)] transition-all">
-            Begin Assessment
+            {lastEntry ? "Play Again" : "Begin Assessment"}
           </button>
         </div>
       )}
@@ -252,8 +323,50 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
             <span className="text-[#4f8ef7]">Keyboard:</span> press Spacebar to respond.{" "}
             <span className="text-[#4f8ef7]">Touch:</span> tap anywhere on the grid.
           </p>
+          <button onClick={() => setScreen("why-it-matters")} className="bg-[#f5c842] text-[#0d0f14] font-bold text-[15px] px-12 py-4 rounded-lg hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(245,200,66,0.3)] transition-all">
+            Got it — next
+          </button>
+        </div>
+      )}
+
+      {/* Why It Matters */}
+      {screen === "why-it-matters" && (
+        <div className="flex flex-col items-center text-center px-6 py-10 animate-fadeIn max-w-[500px] mx-auto">
+          <span className="font-mono text-[10px] tracking-[2px] uppercase px-3.5 py-1 rounded bg-[rgba(245,200,66,0.08)] text-[#f5c842] border border-[rgba(245,200,66,0.2)] mb-6">
+            Before you start
+          </span>
+          <h2 className="text-[22px] font-bold tracking-tight mb-6">
+            Why 160 trials?<br />Why 15 minutes?
+          </h2>
+
+          <div className="flex flex-col gap-3 mb-8 text-left w-full">
+            <div className="bg-[#13161e] border border-[#252a38] rounded-xl p-4">
+              <div className="text-[#f5c842] font-bold text-[13px] mb-1">Attention isn&apos;t a snapshot</div>
+              <div className="font-mono text-[11px] text-[#5a6180] leading-relaxed">
+                ADHD affects how attention holds up over time, not just in short bursts. The task needs enough trials to measure whether your focus drifts — something that only shows up after several minutes.
+              </div>
+            </div>
+            <div className="bg-[#13161e] border border-[#252a38] rounded-xl p-4">
+              <div className="text-[#4f8ef7] font-bold text-[13px] mb-1">The score needs real data</div>
+              <div className="font-mono text-[11px] text-[#5a6180] leading-relaxed">
+                Your ICV score (reaction time variability) can only be calculated reliably from 100+ trials. Fewer trials = noisy, unreliable results. 160 is the clinical minimum.
+              </div>
+            </div>
+            <div className="bg-[#13161e] border border-[#252a38] rounded-xl p-4">
+              <div className="text-[#34d399] font-bold text-[13px] mb-1">The discomfort is the data</div>
+              <div className="font-mono text-[11px] text-[#5a6180] leading-relaxed">
+                Feeling bored, restless, or distracted during the task is normal — and meaningful. Your brain&apos;s response to a monotonous sustained task is exactly what&apos;s being measured.
+              </div>
+            </div>
+          </div>
+
+          <p className="font-mono text-[12px] text-[#5a6180] leading-relaxed mb-9">
+            Find a quiet spot, put your phone down, and commit to finishing.<br />
+            <span className="text-[#dde3f0]">Your results are only valid if you complete the full task.</span>
+          </p>
+
           <button onClick={() => setScreen("practice-intro")} className="bg-[#f5c842] text-[#0d0f14] font-bold text-[15px] px-12 py-4 rounded-lg hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(245,200,66,0.3)] transition-all">
-            Got it — start practice
+            I&apos;m ready — let&apos;s go
           </button>
         </div>
       )}
@@ -365,13 +478,50 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
               desc="Milliseconds (avg speed)"
             />
           </div>
+
+          {/* Previous run comparison */}
+          {history.length >= 2 && (
+            <div className="w-full max-w-[420px] mb-5 p-4 bg-[#13161e] border border-[#252a38] rounded-xl">
+              <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#5a6180] mb-3">
+                vs last attempt ({new Date(history[1].completedAt).toLocaleDateString()})
+              </p>
+              <div className="flex justify-center gap-6">
+                {[
+                  { label: "AQvis", curr: scores.aqvis, prev: history[1].scores.aqvis, invert: false },
+                  { label: "RCQvis", curr: scores.rcqvis, prev: history[1].scores.rcqvis, invert: false },
+                  { label: "ICV", curr: scores.icv, prev: history[1].scores.icv, invert: true },
+                  { label: "RT ms", curr: scores.meanRT, prev: history[1].scores.meanRT, invert: true },
+                ].map(({ label, curr, prev, invert }) => {
+                  const improved = invert ? curr < prev : curr > prev;
+                  const same = curr === prev;
+                  const diff = curr - prev;
+                  return (
+                    <div key={label} className="text-center">
+                      <div className="font-mono text-[9px] text-[#5a6180] uppercase tracking-wider mb-1">{label}</div>
+                      <div className={`text-[13px] font-bold ${same ? "text-[#5a6180]" : improved ? "text-[#34d399]" : "text-[#f87171]"}`}>
+                        {same ? "—" : `${diff > 0 ? "+" : ""}${label === "ICV" || label === "RT ms" ? diff.toFixed(1) : diff}`}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* History count */}
+          {history.length > 1 && (
+            <p className="font-mono text-[10px] text-[#5a6180] mb-4">
+              {history.length} attempts stored on this device
+            </p>
+          )}
+
           <div className="font-mono text-[11px] text-[#5a6180] leading-relaxed max-w-[420px] p-4 border border-[#252a38] rounded-lg bg-[#13161e] mb-5">
             AQvis &lt; 70 or ICV &gt; 35% may indicate attention difficulties.<br />
             These scores are for clinical screening only — not a diagnosis.<br />
             A clinician will review your full profile.
           </div>
           <button onClick={restart} className="bg-transparent text-[#dde3f0] border border-[#252a38] font-bold text-[15px] px-12 py-4 rounded-lg hover:border-[#4f8ef7] hover:text-[#4f8ef7] transition-all">
-            Restart
+            Play Again
           </button>
         </div>
       )}
