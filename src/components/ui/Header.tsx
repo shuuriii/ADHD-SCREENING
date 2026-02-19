@@ -27,14 +27,14 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 backdrop-blur-lg bg-white/80 border-b border-border">
-      <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div className="max-w-4xl mx-auto px-4 h-14 flex items-center relative">
         <Link
           href="/"
-          className="text-xl font-semibold text-primary-700 tracking-tight"
+          className="absolute left-1/2 -translate-x-1/2 sm:static sm:translate-x-0 text-xl font-semibold text-primary-700 tracking-tight"
         >
           fayth.life
         </Link>
-        <nav className="flex items-center gap-4">
+        <nav className="ml-auto flex items-center gap-4">
           <Link
             href="/"
             className="hidden sm:block text-sm text-muted hover:text-primary-700 transition-colors"
