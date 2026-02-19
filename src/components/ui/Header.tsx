@@ -94,7 +94,7 @@ export default function Header() {
             >
               <Image
                 src={`/images/${petPreference}-avatar.png`}
-                alt={petPreference === "cat" ? "Cat avatar" : "Dog avatar"}
+                alt={`${petPreference} avatar`}
                 width={32}
                 height={32}
                 className="object-cover w-full h-full"
