@@ -1,9 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { useAssessment } from "@/contexts/AssessmentContext";
 import type { InstrumentType } from "@/questionnaire/types";
+import { FileText } from "lucide-react";
 
 /* ── Node definitions ─────────────────────────────────────────────── */
 
@@ -283,7 +285,16 @@ export default function AssessmentMapPage() {
           </div>
         </div>
 
-        <p className="text-center text-xs text-muted/50 mt-6">
+        <div className="flex justify-center mt-6">
+          <Link
+            href="/assessment/my-report"
+            className="inline-flex items-center gap-2 text-sm font-medium text-[#46a83c] border border-[#c3eab6] bg-[#f3faf1] rounded-xl px-4 py-2 hover:bg-[#e2f5db] transition-colors"
+          >
+            <FileText size={14} />
+            View &amp; Download My Report
+          </Link>
+        </div>
+        <p className="text-center text-xs text-muted/50 mt-3">
           More tasks and tools are on the way — we&apos;re building as we go.
         </p>
       </div>
