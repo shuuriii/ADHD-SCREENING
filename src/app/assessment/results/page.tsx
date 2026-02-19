@@ -16,7 +16,7 @@ import Button from "@/components/ui/Button";
 import Link from "next/link";
 import { RotateCcw, Download, Target } from "lucide-react";
 import { saveQuestionnaireResult } from "@/lib/supabase/questionnaire-results";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, supabaseConfigured } from "@/lib/supabase/client";
 import { saveQuestionnaireToBundle } from "@/lib/report-bundle";
 
 const PDFDownloadButton = dynamic(
@@ -64,7 +64,7 @@ export default function ResultsPage() {
     saveQuestionnaireToBundle(instrument, activeResult);
     // Save questionnaire result to Supabase once on mount (fire-and-forget)
     const sessionId = localStorage.getItem("fayth-session-id");
-    if (sessionId) {
+    if (sessionId && supabaseConfigured) {
       createClient().auth.getUser().then(({ data }) => {
         saveQuestionnaireResult(activeResult, sessionId, data.user?.id ?? null);
       });
