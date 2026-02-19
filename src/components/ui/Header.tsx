@@ -37,25 +37,25 @@ export default function Header() {
         <nav className="flex items-center gap-4">
           <Link
             href="/"
-            className="text-sm text-muted hover:text-primary-700 transition-colors"
+            className="hidden sm:block text-sm text-muted hover:text-primary-700 transition-colors"
           >
             Home
           </Link>
           <Link
             href="/assessment/intake"
-            className="text-sm text-muted hover:text-primary-700 transition-colors"
+            className="hidden sm:block text-sm text-muted hover:text-primary-700 transition-colors"
           >
             Start Screening
           </Link>
           <Link
             href="/assessment/focus-task"
-            className="text-sm text-muted hover:text-primary-700 transition-colors"
+            className="hidden sm:block text-sm text-muted hover:text-primary-700 transition-colors"
           >
             Tasks
           </Link>
           <Link
             href="/assessment/history"
-            className="text-sm text-muted hover:text-primary-700 transition-colors"
+            className="hidden sm:block text-sm text-muted hover:text-primary-700 transition-colors"
           >
             History
           </Link>
