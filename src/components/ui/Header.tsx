@@ -48,6 +48,12 @@ export default function Header() {
             Start Screening
           </Link>
           <Link
+            href="/assessment/focus-task"
+            className="text-sm text-muted hover:text-primary-700 transition-colors"
+          >
+            Tasks
+          </Link>
+          <Link
             href="/assessment/history"
             className="text-sm text-muted hover:text-primary-700 transition-colors"
           >

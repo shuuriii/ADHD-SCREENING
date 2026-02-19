@@ -51,7 +51,7 @@ export default function CursorGlow() {
         style={{
           left: pos.x,
           top: pos.y,
-          background: "radial-gradient(circle, rgba(168,85,247,0.08) 0%, rgba(168,85,247,0.03) 40%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(251,191,36,0.08) 0%, rgba(251,191,36,0.03) 40%, transparent 70%)",
         }}
       />
       {/* Trail particles */}
@@ -67,7 +67,7 @@ export default function CursorGlow() {
               top: t.y - size / 2,
               width: size,
               height: size,
-              background: `rgba(168,85,247,${0.2 * age})`,
+              background: `rgba(251,191,36,${0.2 * age})`,
               filter: `blur(${1 + (1 - age) * 2}px)`,
               transition: "opacity 0.3s ease-out",
               opacity: age,

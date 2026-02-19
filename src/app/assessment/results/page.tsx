@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { useAssessment } from "@/contexts/AssessmentContext";
-import Disclaimer from "@/components/results/Disclaimer";
 import ScoreSummary from "@/components/results/ScoreSummary";
 import PresentationTypeCard from "@/components/results/PresentationType";
 import DSM5CriteriaCard from "@/components/results/DSM5Criteria";
@@ -16,6 +15,9 @@ import FocusTaskCard from "@/components/results/FocusTaskCard";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
 import { RotateCcw, Download, Target } from "lucide-react";
+import { saveQuestionnaireResult } from "@/lib/supabase/questionnaire-results";
+import { createClient } from "@/lib/supabase/client";
+import { saveQuestionnaireToBundle } from "@/lib/report-bundle";
 
 const PDFDownloadButton = dynamic(
   () => import("@/components/report/PDFDownloadButton"),
@@ -56,6 +58,20 @@ export default function ResultsPage() {
     }
   }, [activeResult, router]);
 
+  useEffect(() => {
+    if (!activeResult) return;
+    // Save to unified report bundle (local)
+    saveQuestionnaireToBundle(instrument, activeResult);
+    // Save questionnaire result to Supabase once on mount (fire-and-forget)
+    const sessionId = localStorage.getItem("fayth-session-id");
+    if (sessionId) {
+      createClient().auth.getUser().then(({ data }) => {
+        saveQuestionnaireResult(activeResult, sessionId, data.user?.id ?? null);
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (!activeResult) return null;
 
   const handleStartNew = () => {
@@ -85,7 +101,6 @@ export default function ResultsPage() {
         </p>
       </motion.div>
 
-      <Disclaimer />
       <ScoreSummary domainA={activeResult.domainA} domainB={activeResult.domainB} />
       <PresentationTypeCard result={activeResult.presentationType} />
 

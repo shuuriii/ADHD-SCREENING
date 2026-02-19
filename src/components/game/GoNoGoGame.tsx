@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { calcGoNoGoScores, type TrialRecord, type GoNoGoScores } from "@/lib/gonogo-scoring";
 import { saveGameScore } from "@/lib/supabase/game-scores";
 import { createClient } from "@/lib/supabase/client";
+import { saveGameToBundle } from "@/lib/report-bundle";
 
 const CFG = {
   PRACTICE: 20,
@@ -128,6 +129,7 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
         setScores(s);
         saveToHistory(s);
         setHistory(loadHistory());
+        saveGameToBundle("gonogo", s);
         onComplete?.(s);
         // Save to Supabase (fire-and-forget)
         const sessionId = localStorage.getItem("fayth-session-id");

@@ -22,13 +22,14 @@ export default function FluidBackground() {
     resize();
     window.addEventListener("resize", resize);
 
-    // Soft color palette — purples, blues, teals
+    // Pastel yellow-green palette
     const blobs = [
-      { x: 0.3, y: 0.3, r: 0.35, color: [124, 58, 237, 0.12], speedX: 0.15, speedY: 0.1, phaseX: 0, phaseY: 0.5 },
-      { x: 0.7, y: 0.6, r: 0.3, color: [96, 165, 250, 0.1], speedX: 0.12, speedY: 0.18, phaseX: 1, phaseY: 0 },
-      { x: 0.5, y: 0.8, r: 0.4, color: [94, 234, 212, 0.08], speedX: 0.1, speedY: 0.14, phaseX: 2, phaseY: 1.5 },
-      { x: 0.2, y: 0.5, r: 0.25, color: [168, 85, 247, 0.1], speedX: 0.18, speedY: 0.12, phaseX: 3, phaseY: 2 },
-      { x: 0.8, y: 0.2, r: 0.3, color: [139, 92, 246, 0.09], speedX: 0.08, speedY: 0.16, phaseX: 1.5, phaseY: 3 },
+      { x: 0.3, y: 0.3, r: 0.35, color: [134, 239, 172, 0.18], speedX: 0.15, speedY: 0.1,  phaseX: 0,   phaseY: 0.5 },
+      { x: 0.7, y: 0.6, r: 0.3,  color: [253, 224, 71,  0.14], speedX: 0.12, speedY: 0.18, phaseX: 1,   phaseY: 0   },
+      { x: 0.5, y: 0.8, r: 0.4,  color: [187, 247, 208, 0.12], speedX: 0.1,  speedY: 0.14, phaseX: 2,   phaseY: 1.5 },
+      { x: 0.2, y: 0.5, r: 0.25, color: [254, 240, 138, 0.13], speedX: 0.18, speedY: 0.12, phaseX: 3,   phaseY: 2   },
+      { x: 0.8, y: 0.2, r: 0.3,  color: [74,  222, 128, 0.11], speedX: 0.08, speedY: 0.16, phaseX: 1.5, phaseY: 3   },
+      { x: 0.85, y: 0.7, r: 0.22, color: [253, 230, 138, 0.12], speedX: 0.11, speedY: 0.09, phaseX: 4,  phaseY: 2.5 },
     ];
 
     // Caustic light rays
@@ -44,11 +45,11 @@ export default function FluidBackground() {
       const w = canvas!.width;
       const h = canvas!.height;
 
-      // Base gradient — very soft purple-to-white
+      // Base gradient — warm cream to soft mint
       const bg = ctx!.createLinearGradient(0, 0, 0, h);
-      bg.addColorStop(0, "#faf5ff");
-      bg.addColorStop(0.5, "#ffffff");
-      bg.addColorStop(1, "#f5f3ff");
+      bg.addColorStop(0, "#fffef8");
+      bg.addColorStop(0.5, "#f8fdf4");
+      bg.addColorStop(1, "#f3faf1");
       ctx!.fillStyle = bg;
       ctx!.fillRect(0, 0, w, h);
 
@@ -75,11 +76,11 @@ export default function FluidBackground() {
         const rw = ray.width * w;
         const grad = ctx!.createLinearGradient(rx - rw, 0, rx + rw, 0);
         const op = ray.opacity * (0.7 + 0.3 * Math.sin(time * 0.5 + ray.phase));
-        grad.addColorStop(0, `rgba(168,85,247,0)`);
-        grad.addColorStop(0.3, `rgba(168,85,247,${op})`);
-        grad.addColorStop(0.5, `rgba(255,255,255,${op * 2})`);
-        grad.addColorStop(0.7, `rgba(168,85,247,${op})`);
-        grad.addColorStop(1, `rgba(168,85,247,0)`);
+        grad.addColorStop(0, `rgba(74,222,128,0)`);
+        grad.addColorStop(0.3, `rgba(74,222,128,${op})`);
+        grad.addColorStop(0.5, `rgba(255,255,230,${op * 2})`);
+        grad.addColorStop(0.7, `rgba(74,222,128,${op})`);
+        grad.addColorStop(1, `rgba(74,222,128,0)`);
 
         ctx!.fillStyle = grad;
         ctx!.fillRect(rx - rw * 3, 0, rw * 6, h);
@@ -95,13 +96,13 @@ export default function FluidBackground() {
 
         ctx!.beginPath();
         ctx!.arc(rx, ry, rr, 0, Math.PI * 2);
-        ctx!.strokeStyle = `rgba(168,85,247,${0.03 + 0.015 * Math.sin(time + i)})`;
+        ctx!.strokeStyle = `rgba(74,222,128,${0.03 + 0.015 * Math.sin(time + i)})`;
         ctx!.lineWidth = 1.5;
         ctx!.stroke();
 
         ctx!.beginPath();
         ctx!.arc(rx, ry, rr * 1.5, 0, Math.PI * 2);
-        ctx!.strokeStyle = `rgba(96,165,250,${0.02 + 0.01 * Math.sin(time * 0.7 + i)})`;
+        ctx!.strokeStyle = `rgba(253,224,71,${0.02 + 0.01 * Math.sin(time * 0.7 + i)})`;
         ctx!.lineWidth = 1;
         ctx!.stroke();
       }

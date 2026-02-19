@@ -8,7 +8,7 @@ export async function saveGameScore(
 ): Promise<void> {
   if (!supabaseConfigured) return;
   const supabase = createClient();
-  const { error } = await supabase.from("game_scores").insert({
+  const { error } = await supabase.from("gonogo_scores").insert({
     session_id: sessionId,
     user_id: userId ?? null,
     aq_vis: scores.aqvis,
@@ -22,6 +22,9 @@ export async function saveGameScore(
     correct_rejections: scores.correctRejections,
     omission_pct: scores.omissionPct,
     commission_pct: scores.commissionPct,
+    vig_slope: scores.vigSlope,
+    go_total: scores.goTotal,
+    nogo_total: scores.nogoTotal,
   });
   if (error) {
     console.error("[Supabase] Failed to save game score:", error.message);

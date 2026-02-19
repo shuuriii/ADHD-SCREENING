@@ -88,13 +88,14 @@ export interface Interpretation {
   clinicalNote: string;
 }
 
-export type PetPreference = "cat" | "dog";
+export type PetPreference = "fox" | "panda" | "frog" | "bunny";
 
 export interface UserData {
   name: string;
   gender: Gender | null;
   age: number | null;
   petPreference: PetPreference | null;
+  email?: string;
 }
 
 export interface AssessmentResult {

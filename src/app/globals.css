@@ -1,34 +1,35 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-primary-50: #faf5ff;
-  --color-primary-100: #f3e8ff;
-  --color-primary-200: #e9d5ff;
-  --color-primary-300: #d8b4fe;
-  --color-primary-400: #c084fc;
-  --color-primary-500: #a855f7;
-  --color-primary-600: #9333ea;
-  --color-primary-700: #7c3aed;
-  --color-primary-800: #6b21a8;
-  --color-primary-900: #581c87;
+  --color-primary-50: #f3faf1;
+  --color-primary-100: #e2f5db;
+  --color-primary-200: #c3eab6;
+  --color-primary-300: #96d888;
+  --color-primary-400: #65c058;
+  --color-primary-500: #46a83c;
+  --color-primary-600: #358a2d;
+  --color-primary-700: #2c6e25;
+  --color-primary-800: #265820;
+  --color-primary-900: #1e471a;
 
-  --color-calm-blue: #60a5fa;
-  --color-calm-teal: #5eead4;
-  --color-calm-warm: #fbbf24;
-  --color-calm-neutral: #f5f3ff;
+  --color-calm-blue: #fef08a;
+  --color-calm-teal: #bbf7d0;
+  --color-calm-warm: #fde68a;
+  --color-calm-neutral: #f3faf1;
 
   --color-severity-high: #ef4444;
   --color-severity-moderate: #f59e0b;
   --color-severity-mild: #eab308;
   --color-severity-low: #22c55e;
 
-  --color-background: #ffffff;
-  --color-foreground: #1e1b4b;
-  --color-muted: #6b7280;
-  --color-border: #e5e7eb;
+  --color-background: #fffef8;
+  --color-foreground: #1a2410;
+  --color-muted: #5c7055;
+  --color-border: #d8ecd2;
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-syne);
 }
 
 body {
@@ -61,6 +62,42 @@ body {
     transform: translate(var(--tx), var(--ty)) scale(0);
     opacity: 0;
   }
+}
+
+/* Focus Quest: creature swim-in animation */
+@keyframes fq-swim-in {
+  from {
+    opacity: 0;
+    transform: translateX(40px) scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.fq-swim-in {
+  animation: fq-swim-in 0.18s ease-out forwards;
+}
+
+/* Chronos Sort hold charge animation — uses CSS custom props set inline */
+@keyframes chronos-charge {
+  0%, 100% {
+    box-shadow: 0 0 20px var(--charge-lo, rgba(0, 212, 200, 0.3));
+  }
+  50% {
+    box-shadow: 0 0 60px var(--charge-hi, rgba(0, 212, 200, 0.6));
+  }
+}
+
+@keyframes float-tag {
+  0%, 100% { transform: translateY(0px) rotate(var(--tag-rotate, 0deg)); }
+  50%       { transform: translateY(-8px) rotate(var(--tag-rotate, 0deg)); }
+}
+
+@keyframes brain-pulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.04); }
 }
 
 @media (prefers-reduced-motion: reduce) {

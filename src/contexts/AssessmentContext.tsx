@@ -64,7 +64,7 @@ type Action =
 const initialState: AssessmentState = {
   currentPhase: "intake",
   instrument: "dsm5",
-  userData: { name: "", gender: null, age: null, petPreference: null },
+  userData: { name: "", gender: null, age: null, petPreference: null, email: "" },
   responses: {},
   contextResponses: {},
   followUpResponses: {},

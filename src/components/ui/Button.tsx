@@ -18,7 +18,7 @@ interface ButtonProps {
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-primary-700 text-white hover:bg-primary-800 focus-visible:ring-primary-500 shadow-md",
+    "bg-[#fbbf24] text-foreground border-2 border-foreground shadow-[3px_3px_0_#1a2410] hover:shadow-[4px_4px_0_#1a2410] hover:-translate-x-px hover:-translate-y-px active:shadow-[1px_1px_0_#1a2410] active:translate-x-0.5 active:translate-y-0.5 transition-all duration-150 focus-visible:ring-[#fbbf24]",
   secondary:
     "bg-white text-primary-700 border-2 border-primary-200 hover:border-primary-400 hover:bg-primary-50 focus-visible:ring-primary-500",
   ghost:
