@@ -10,8 +10,7 @@ import type { ReportBundle } from "@/lib/report-bundle";
 import type { GoNoGoScores } from "@/lib/gonogo-scoring";
 import type { ChronosScores } from "@/lib/chronos-scoring";
 import type { FocusQuestScores } from "@/lib/focus-quest-scoring";
-import type { AssessmentResult } from "@/questionnaire/types";
-import type { ASRSResult } from "@/questionnaire/types";
+import type { DomainScore, DSM5Criteria, Interpretation } from "@/questionnaire/types";
 
 // ─── Styles ────────────────────────────────────────────────────────────────
 
@@ -91,11 +90,16 @@ function InterpretNote({ text }: { text: string }) {
 // ─── Questionnaire section ─────────────────────────────────────────────────
 
 function QuestionnaireSection({ q }: { q: NonNullable<ReportBundle["questionnaire"]> }) {
-  const result = q.result as AssessmentResult & ASRSResult;
-  const { domainA, domainB, presentationType, interpretation } = result;
+  // Both AssessmentResult and ASRSResult share these fields with identical types.
+  // Use explicit picks to avoid the union narrowing issue on `instrument`/`presentationType`.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const r = q.result as any;
+  const domainA = r.domainA as DomainScore;
+  const domainB = r.domainB as DomainScore;
+  const criteria = r.dsm5Criteria as DSM5Criteria;
+  const interpretation = r.interpretation as Interpretation;
+  const presentationType = r.presentationType as { type: string; label: string; description: string };
   const isASRS = q.instrument === "asrs";
-
-  const criteria = result.dsm5Criteria;
 
   return (
     <View style={s.section}>
@@ -104,7 +108,7 @@ function QuestionnaireSection({ q }: { q: NonNullable<ReportBundle["questionnair
       </Text>
 
       {/* Presentation type */}
-      <View style={[s.presentationBox, { borderLeftColor: presentationBorderColors[(presentationType as { type: string }).type] ?? PRIMARY }]}>
+      <View style={[s.presentationBox, { borderLeftColor: presentationBorderColors[presentationType.type] ?? PRIMARY }]}>
         <Text style={s.presentationLabel}>{presentationType.label}</Text>
         <Text style={s.presentationDesc}>{presentationType.description}</Text>
       </View>
@@ -144,8 +148,8 @@ function QuestionnaireSection({ q }: { q: NonNullable<ReportBundle["questionnair
               <Text style={s.criteriaText}>{label}</Text>
             </View>
           ))}
-          {(result as AssessmentResult).interpretation?.clinicalNote && (
-            <Text style={s.interpretNote}>{(result as AssessmentResult).interpretation.clinicalNote}</Text>
+          {interpretation.clinicalNote && (
+            <Text style={s.interpretNote}>{interpretation.clinicalNote}</Text>
           )}
         </View>
       )}
@@ -154,7 +158,7 @@ function QuestionnaireSection({ q }: { q: NonNullable<ReportBundle["questionnair
       {interpretation.genderInsights?.length > 0 && (
         <View style={s.section}>
           <Text style={s.sectionTitle}>Gender-Specific Insights</Text>
-          {interpretation.genderInsights.map((insight, i) => (
+          {interpretation.genderInsights.map((insight: string, i: number) => (
             <Text key={i} style={s.insightItem}>• {insight}</Text>
           ))}
         </View>
@@ -164,7 +168,7 @@ function QuestionnaireSection({ q }: { q: NonNullable<ReportBundle["questionnair
       {interpretation.recommendations?.length > 0 && (
         <View style={s.section}>
           <Text style={s.sectionTitle}>Recommendations</Text>
-          {interpretation.recommendations.map((rec, i) => (
+          {interpretation.recommendations.map((rec: string, i: number) => (
             <Text key={i} style={s.recommendationItem}>
               <Text style={s.recommendationNumber}>{i + 1}. </Text>{rec}
             </Text>
