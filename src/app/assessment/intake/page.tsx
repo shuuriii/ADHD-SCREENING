@@ -9,7 +9,7 @@ import Card from "@/components/ui/Card";
 import { Mail } from "lucide-react";
 import type { Gender, PetPreference } from "@/questionnaire/types";
 import { saveSession } from "@/lib/supabase/sessions";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, supabaseConfigured } from "@/lib/supabase/client";
 import { initBundle } from "@/lib/report-bundle";
 
 export default function IntakePage() {
@@ -64,16 +64,18 @@ export default function IntakePage() {
     );
 
     // Save session to Supabase (fire-and-forget)
-    createClient().auth.getUser().then(({ data }) => {
-      saveSession(
-        parseInt(age),
-        gender as Gender,
-        petPreference,
-        "dsm5",
-        sessionId,
-        data.user?.id ?? null
-      );
-    });
+    if (supabaseConfigured) {
+      createClient().auth.getUser().then(({ data }) => {
+        saveSession(
+          parseInt(age),
+          gender as Gender,
+          petPreference,
+          "dsm5",
+          sessionId,
+          data.user?.id ?? null
+        );
+      });
+    }
 
     router.push("/assessment/map");
   };
