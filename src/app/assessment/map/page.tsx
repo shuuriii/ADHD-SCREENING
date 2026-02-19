@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useAssessment } from "@/contexts/AssessmentContext";
 import type { InstrumentType } from "@/questionnaire/types";
-import { FileText } from "lucide-react";
+import { FileText, CheckCircle2, ChevronRight } from "lucide-react";
+import { getBundle, type ReportBundle } from "@/lib/report-bundle";
 
 /* ── Node definitions ─────────────────────────────────────────────── */
 
@@ -23,7 +25,8 @@ interface MapNode {
   href: string;
   color: string;
   rotate: string;
-  offsetY?: string; // stagger offset
+  offsetY?: string;
+  bundleKey?: string;
 }
 
 const NODES: MapNode[] = [
@@ -40,6 +43,7 @@ const NODES: MapNode[] = [
     color: "#46a83c",
     rotate: "-2deg",
     offsetY: "0px",
+    bundleKey: "dsm5",
   },
   {
     id: "asrs",
@@ -54,6 +58,7 @@ const NODES: MapNode[] = [
     color: "#d97706",
     rotate: "1.5deg",
     offsetY: "32px",
+    bundleKey: "asrs",
   },
   {
     id: "gonogo",
@@ -67,6 +72,7 @@ const NODES: MapNode[] = [
     color: "#2c6e25",
     rotate: "-1deg",
     offsetY: "0px",
+    bundleKey: "gonogo",
   },
   {
     id: "chronos",
@@ -80,6 +86,7 @@ const NODES: MapNode[] = [
     color: "#0891b2",
     rotate: "2deg",
     offsetY: "32px",
+    bundleKey: "chronos",
   },
   {
     id: "focus-quest",
@@ -93,6 +100,7 @@ const NODES: MapNode[] = [
     color: "#0284c7",
     rotate: "-1.5deg",
     offsetY: "0px",
+    bundleKey: "focusQuest",
   },
   {
     id: "coming1",
@@ -109,14 +117,44 @@ const NODES: MapNode[] = [
   },
 ];
 
+/* ── Completion helpers ───────────────────────────────────────────── */
+
+function isNodeComplete(node: MapNode, bundle: ReportBundle | null): boolean {
+  if (!bundle || !node.bundleKey) return false;
+  if (node.type === "questionnaire") {
+    return bundle.questionnaire?.instrument === node.instrument;
+  }
+  const key = node.bundleKey as keyof ReportBundle["games"];
+  return Boolean(bundle.games[key]);
+}
+
+function suggestNextNode(bundle: ReportBundle | null): MapNode | null {
+  if (!bundle) return null;
+  const ordered = ["dsm5", "asrs", "gonogo", "chronos", "focus-quest"]
+    .map(id => NODES.find(n => n.id === id)!);
+  // If no questionnaire done, suggest the first questionnaire
+  if (!bundle.questionnaire) return ordered[0];
+  // Otherwise suggest first incomplete non-locked node
+  return ordered.find(n => !isNodeComplete(n, bundle)) ?? null;
+}
+
 /* ── NodeCard ─────────────────────────────────────────────────────── */
 
-function NodeCard({ node, index, onSelect }: {
+function NodeCard({
+  node,
+  index,
+  completed,
+  suggested,
+  onSelect,
+}: {
   node: MapNode;
   index: number;
+  completed: boolean;
+  suggested: boolean;
   onSelect: (node: MapNode) => void;
 }) {
   const locked = node.type === "locked";
+  const DONE_GREEN = "#46a83c";
 
   return (
     <motion.div
@@ -131,6 +169,10 @@ function NodeCard({ node, index, onSelect }: {
         className={`w-full text-left rounded-2xl border-2 p-5 transition-all duration-150 group relative overflow-hidden
           ${locked
             ? "border-border bg-white/60 opacity-60 cursor-not-allowed"
+            : completed
+            ? "bg-[#f3faf1] border-[#46a83c] shadow-[2px_2px_0_#c3eab6] cursor-pointer hover:-translate-y-0.5 hover:shadow-[3px_3px_0_#46a83c]"
+            : suggested
+            ? "bg-white border-amber-300 ring-2 ring-amber-300/50 ring-offset-1 hover:border-[var(--node-color)] hover:-translate-y-1 hover:shadow-[3px_3px_0_var(--node-color)] cursor-pointer shadow-sm"
             : "bg-white border-transparent hover:border-[var(--node-color)] hover:-translate-y-1 hover:shadow-[3px_3px_0_var(--node-color)] cursor-pointer shadow-sm"
           }`}
         style={{ "--node-color": node.color } as React.CSSProperties}
@@ -139,7 +181,7 @@ function NodeCard({ node, index, onSelect }: {
         {!locked && (
           <div
             className="absolute top-0 left-0 bottom-0 w-1 rounded-l-2xl"
-            style={{ background: node.color }}
+            style={{ background: completed ? DONE_GREEN : node.color }}
           />
         )}
 
@@ -147,8 +189,8 @@ function NodeCard({ node, index, onSelect }: {
         <span
           className="inline-block text-[10px] font-semibold tracking-widest uppercase px-2 py-0.5 rounded-full mb-3"
           style={{
-            background: locked ? "#f3f4f6" : `${node.color}18`,
-            color: locked ? "#9ca3af" : node.color,
+            background: locked ? "#f3f4f6" : completed ? "#dcfce7" : `${node.color}18`,
+            color: locked ? "#9ca3af" : completed ? DONE_GREEN : node.color,
           }}
         >
           {node.category}
@@ -158,14 +200,14 @@ function NodeCard({ node, index, onSelect }: {
         <div className="flex items-start gap-3 mb-2">
           <span
             className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
-            style={{ background: locked ? "#f3f4f6" : `${node.color}15` }}
+            style={{ background: locked ? "#f3f4f6" : completed ? "#dcfce7" : `${node.color}15` }}
           >
             {node.emoji}
           </span>
           <div>
             <p
               className="font-bold text-sm leading-tight"
-              style={{ color: locked ? "#9ca3af" : node.color }}
+              style={{ color: locked ? "#9ca3af" : completed ? DONE_GREEN : node.color }}
             >
               {node.title}
             </p>
@@ -178,6 +220,22 @@ function NodeCard({ node, index, onSelect }: {
         <p className="text-xs text-muted leading-relaxed pl-14">
           {node.desc}
         </p>
+
+        {/* Done badge */}
+        {completed && (
+          <span className="absolute top-3 right-3 flex items-center gap-1 text-[10px] font-semibold text-[#46a83c] bg-[#dcfce7] px-2 py-0.5 rounded-full">
+            <CheckCircle2 size={10} />
+            Done
+          </span>
+        )}
+
+        {/* Next up badge */}
+        {suggested && !completed && (
+          <span className="absolute top-3 right-3 flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+            <ChevronRight size={10} />
+            Next up
+          </span>
+        )}
 
         {/* Coming soon badge */}
         {locked && (
@@ -200,9 +258,19 @@ export default function AssessmentMapPage() {
   const router = useRouter();
   const { state, dispatch } = useAssessment();
   const { name, petPreference } = state.userData;
+  const [bundle, setBundle] = useState<ReportBundle | null>(null);
+
+  useEffect(() => {
+    setBundle(getBundle());
+  }, []);
 
   const avatar = petPreference ? AVATAR_EMOJI[petPreference] : "🧠";
   const firstName = name && name !== "Anonymous" ? name.split(" ")[0] : null;
+
+  const suggested = suggestNextNode(bundle);
+  const completedCount = bundle
+    ? NODES.filter(n => isNodeComplete(n, bundle)).length
+    : 0;
 
   const handleSelect = (node: MapNode) => {
     if (node.instrument) {
@@ -230,7 +298,33 @@ export default function AssessmentMapPage() {
             Pick a questionnaire, a cognitive task, or jump into both.
             Every path adds a new layer to your report.
           </p>
+          {completedCount > 0 && (
+            <p className="mt-2 text-xs font-medium text-[#46a83c]">
+              {completedCount} of 5 sections complete
+            </p>
+          )}
         </motion.div>
+
+        {/* Suggested next banner — shown after at least 1 section done */}
+        {suggested && completedCount > 0 && (
+          <motion.button
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            onClick={() => handleSelect(suggested)}
+            className="w-full mb-6 flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-3.5 hover:bg-amber-100 transition-colors text-left group"
+          >
+            <span className="text-2xl">{suggested.emoji}</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-bold tracking-widest uppercase text-amber-600 mb-0.5">
+                Suggested next step
+              </p>
+              <p className="text-sm font-semibold text-amber-900 truncate">{suggested.title}</p>
+              <p className="text-xs text-amber-700/70">{suggested.time}</p>
+            </div>
+            <ChevronRight size={18} className="text-amber-500 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+          </motion.button>
+        )}
 
         {/* Parchment map container */}
         <div
@@ -263,7 +357,14 @@ export default function AssessmentMapPage() {
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
             {NODES.filter(n => n.type === "questionnaire").map((node, i) => (
-              <NodeCard key={node.id} node={node} index={i} onSelect={handleSelect} />
+              <NodeCard
+                key={node.id}
+                node={node}
+                index={i}
+                completed={isNodeComplete(node, bundle)}
+                suggested={suggested?.id === node.id}
+                onSelect={handleSelect}
+              />
             ))}
           </div>
 
@@ -280,7 +381,14 @@ export default function AssessmentMapPage() {
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {NODES.filter(n => n.type === "game" || n.type === "locked").map((node, i) => (
-              <NodeCard key={node.id} node={node} index={i + 2} onSelect={handleSelect} />
+              <NodeCard
+                key={node.id}
+                node={node}
+                index={i + 2}
+                completed={isNodeComplete(node, bundle)}
+                suggested={suggested?.id === node.id}
+                onSelect={handleSelect}
+              />
             ))}
           </div>
         </div>
