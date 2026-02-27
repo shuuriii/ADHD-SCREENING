@@ -7,6 +7,7 @@ import { useAssessment } from "@/contexts/AssessmentContext";
 import { dsm5Questions } from "@/questionnaire/dsm5-questions";
 import { asrsQuestions } from "@/questionnaire/asrs-questions";
 import { contextQuestions } from "@/questionnaire/context-questions";
+import { determineFollowUps } from "@/questionnaire/scoring";
 import type { LikertValue } from "@/questionnaire/types";
 import LikertScale from "@/components/assessment/LikertScale";
 import ContextQuestion from "@/components/assessment/ContextQuestion";
@@ -120,13 +121,26 @@ export default function QuestionnairePage() {
             // Determine follow-ups and transition
             try {
               computeFollowUps();
+              // Peek at computed follow-ups to show appropriate message
+              const followUps = determineFollowUps(state.responses, state.userData.gender);
+              if (followUps.length > 0) {
+                setPhaseTransitionData({
+                  title: "Almost there!",
+                  subtitle: "A few personalized follow-up questions.",
+                });
+              } else {
+                setPhaseTransitionData({
+                  title: "All done!",
+                  subtitle: "Calculating your results...",
+                });
+              }
             } catch (err) {
               console.error("[Questionnaire] Error computing follow-ups:", err);
+              setPhaseTransitionData({
+                title: "Almost there!",
+                subtitle: "Finalizing your assessment.",
+              });
             }
-            setPhaseTransitionData({
-              title: "Almost there!",
-              subtitle: "A few personalized follow-up questions.",
-            });
             setShowPhaseTransition(true);
           }
         }, 350);
