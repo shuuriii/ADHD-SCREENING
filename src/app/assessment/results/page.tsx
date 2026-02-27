@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
@@ -12,12 +12,14 @@ import ASRSPartACard from "@/components/results/ASRSPartACard";
 import GenderInsights from "@/components/results/GenderInsights";
 import Recommendations from "@/components/results/Recommendations";
 import FocusTaskCard from "@/components/results/FocusTaskCard";
+import EmailReportDialog from "@/components/assessment/EmailReportDialog";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
 import { RotateCcw, Download, Target } from "lucide-react";
 import { saveQuestionnaireResult } from "@/lib/supabase/questionnaire-results";
 import { createClient, supabaseConfigured } from "@/lib/supabase/client";
 import { saveQuestionnaireToBundle } from "@/lib/report-bundle";
+import { sendAssessmentReportEmail } from "@/lib/email-service";
 
 const PDFDownloadButton = dynamic(
   () => import("@/components/report/PDFDownloadButton"),
@@ -49,6 +51,7 @@ export default function ResultsPage() {
   const router = useRouter();
   const { state, dispatch } = useAssessment();
   const { instrument, results, asrsResult, userData } = state;
+  const [showEmailDialog, setShowEmailDialog] = useState(true);
 
   const activeResult = instrument === "asrs" ? asrsResult : results;
 
@@ -77,6 +80,22 @@ export default function ResultsPage() {
   const handleStartNew = () => {
     dispatch({ type: "RESET" });
     router.push("/assessment/intake");
+  };
+
+  const handleEmailSubmit = async (email: string): Promise<boolean> => {
+    try {
+      const result = await sendAssessmentReportEmail(
+        email,
+        userData,
+        instrument,
+        `${instrument === "asrs" ? "ASRS v1.1" : "DSM-5"} Assessment Report`,
+        "Your comprehensive assessment report is attached."
+      );
+      return result.success;
+    } catch (error) {
+      console.error("Error sending email:", error);
+      return false;
+    }
   };
 
   return (
@@ -160,6 +179,13 @@ export default function ResultsPage() {
           Start New Assessment
         </Button>
       </motion.div>
+
+      <EmailReportDialog
+        isOpen={showEmailDialog}
+        onClose={() => setShowEmailDialog(false)}
+        onSubmit={handleEmailSubmit}
+        userName={userData.name !== "Anonymous" ? userData.name : undefined}
+      />
     </div>
   );
 }

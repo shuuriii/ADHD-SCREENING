@@ -98,6 +98,8 @@ export interface UserData {
   email?: string;
 }
 
+export type AssessmentCompletionLevel = "main" | "context" | "followups" | "full";
+
 export interface AssessmentResult {
   assessmentId: string;
   instrument: "dsm5";

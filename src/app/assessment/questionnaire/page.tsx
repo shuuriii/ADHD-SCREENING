@@ -15,7 +15,7 @@ import ProgressBar from "@/components/assessment/ProgressBar";
 import PhaseTransition from "@/components/assessment/PhaseTransition";
 import MilestoneAnimation from "@/components/assessment/MilestoneAnimation";
 import Button from "@/components/ui/Button";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, X } from "lucide-react";
 
 const TOTAL_CONTEXT = 3;
 
@@ -93,12 +93,8 @@ export default function QuestionnairePage() {
         if (currentQuestionIndex < TOTAL_MAIN - 1) {
           dispatch({ type: "NEXT_QUESTION" });
         } else {
-          // Transition to context phase
-          setPhaseTransitionData({
-            title: "Great progress!",
-            subtitle: "Now a few context questions about your symptoms.",
-          });
-          setShowPhaseTransition(true);
+          // After main questionnaire, show choice to continue or download
+          router.push("/assessment/results-choice");
         }
       }, 350);
     },
@@ -116,13 +112,9 @@ export default function QuestionnairePage() {
         if (currentQuestionIndex < TOTAL_CONTEXT - 1) {
           dispatch({ type: "NEXT_QUESTION" });
         } else {
-          // Determine follow-ups and transition
+          // After context questions, show choice to continue or download
           computeFollowUps();
-          setPhaseTransitionData({
-            title: "Almost there!",
-            subtitle: "A few personalized follow-up questions.",
-          });
-          setShowPhaseTransition(true);
+          router.push("/assessment/results-choice?from=context");
         }
       }, 350);
     },
@@ -183,6 +175,15 @@ export default function QuestionnairePage() {
   const handlePrevious = () => {
     if (currentQuestionIndex > 0) {
       dispatch({ type: "PREVIOUS_QUESTION" });
+    }
+  };
+
+  const handleQuit = () => {
+    const confirm = window.confirm(
+      "You'll be able to download a report of your answers so far. Continue?"
+    );
+    if (confirm) {
+      router.push("/assessment/partial-results");
     }
   };
 
@@ -300,14 +301,18 @@ export default function QuestionnairePage() {
 
       <AnimatePresence mode="wait">{renderQuestion()}</AnimatePresence>
 
-      {currentQuestionIndex > 0 && (
-        <div className="mt-6">
+      <div className="mt-6 flex gap-2">
+        {currentQuestionIndex > 0 && (
           <Button variant="ghost" size="sm" onClick={handlePrevious}>
             <ChevronLeft size={16} className="mr-1" />
             Previous
           </Button>
-        </div>
-      )}
+        )}
+        <Button variant="ghost" size="sm" onClick={handleQuit} className="ml-auto text-red-600 hover:text-red-700">
+          <X size={16} className="mr-1" />
+          Quit & Get PDF
+        </Button>
+      </div>
 
       {showMilestone && <MilestoneAnimation />}
 
