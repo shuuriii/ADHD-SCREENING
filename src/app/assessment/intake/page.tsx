@@ -77,7 +77,7 @@ export default function IntakePage() {
       });
     }
 
-    router.push("/assessment/map");
+    router.push("/assessment/hub");
   };
 
   return (

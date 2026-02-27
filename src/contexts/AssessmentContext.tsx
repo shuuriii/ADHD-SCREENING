@@ -43,6 +43,16 @@ interface AssessmentState {
   followUpQuestions: FollowUpQuestion[];
   results: AssessmentResult | null;
   asrsResult: ASRSResult | null;
+  completedQuestionnaires: {
+    dsm5: boolean;
+    asrs: boolean;
+  };
+  completedGames: {
+    focusTask: boolean;
+    goNogo: boolean;
+    chronosTask: boolean;
+    focusQuest: boolean;
+  };
 }
 
 type Action =
@@ -58,6 +68,8 @@ type Action =
   | { type: "SET_FOLLOWUPS"; payload: FollowUpQuestion[] }
   | { type: "SET_RESULTS"; payload: AssessmentResult }
   | { type: "SET_ASRS_RESULTS"; payload: ASRSResult }
+  | { type: "MARK_QUESTIONNAIRE_COMPLETE"; payload: "dsm5" | "asrs" }
+  | { type: "MARK_GAME_COMPLETE"; payload: "focusTask" | "goNogo" | "chronosTask" | "focusQuest" }
   | { type: "RESET" }
   | { type: "HYDRATE"; payload: AssessmentState };
 
@@ -72,6 +84,16 @@ const initialState: AssessmentState = {
   followUpQuestions: [],
   results: null,
   asrsResult: null,
+  completedQuestionnaires: {
+    dsm5: false,
+    asrs: false,
+  },
+  completedGames: {
+    focusTask: false,
+    goNogo: false,
+    chronosTask: false,
+    focusQuest: false,
+  },
 };
 
 function reducer(state: AssessmentState, action: Action): AssessmentState {
@@ -121,6 +143,26 @@ function reducer(state: AssessmentState, action: Action): AssessmentState {
       return { ...state, results: action.payload, currentPhase: "results" };
     case "SET_ASRS_RESULTS":
       return { ...state, asrsResult: action.payload, currentPhase: "results" };
+    case "MARK_QUESTIONNAIRE_COMPLETE": {
+      const instrument = action.payload;
+      return {
+        ...state,
+        completedQuestionnaires: {
+          ...state.completedQuestionnaires,
+          [instrument]: true,
+        },
+      };
+    }
+    case "MARK_GAME_COMPLETE": {
+      const game = action.payload;
+      return {
+        ...state,
+        completedGames: {
+          ...state.completedGames,
+          [game]: true,
+        },
+      };
+    }
     case "RESET":
       return initialState;
     case "HYDRATE":
@@ -202,6 +244,7 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
     };
 
     dispatch({ type: "SET_RESULTS", payload: result });
+    dispatch({ type: "MARK_QUESTIONNAIRE_COMPLETE", payload: "dsm5" });
     saveToHistory(result);
   };
 
@@ -235,6 +278,7 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
     };
 
     dispatch({ type: "SET_ASRS_RESULTS", payload: result });
+    dispatch({ type: "MARK_QUESTIONNAIRE_COMPLETE", payload: "asrs" });
     saveToHistory(result);
   };
 

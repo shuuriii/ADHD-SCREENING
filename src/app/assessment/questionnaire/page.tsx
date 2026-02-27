@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { useAssessment } from "@/contexts/AssessmentContext";
 import { dsm5Questions } from "@/questionnaire/dsm5-questions";
@@ -22,6 +22,7 @@ const TOTAL_CONTEXT = 3;
 
 export default function QuestionnairePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const {
     state,
     dispatch,
@@ -38,6 +39,17 @@ export default function QuestionnairePage() {
     followUpResponses,
     followUpQuestions,
   } = state;
+
+  // Set instrument from URL parameter if provided
+  useEffect(() => {
+    const instrumentParam = searchParams.get("instrument");
+    if ((instrumentParam === "asrs" || instrumentParam === "dsm5") && instrumentParam !== instrument) {
+      // Clear existing responses when starting a new instrument
+      dispatch({ type: "SET_INSTRUMENT", payload: instrumentParam });
+      dispatch({ type: "SET_QUESTION_INDEX", payload: 0 });
+      dispatch({ type: "SET_PHASE", payload: "main" });
+    }
+  }, [searchParams, dispatch, instrument]);
 
   const questions = useMemo(
     () => (instrument === "asrs" ? asrsQuestions : dsm5Questions),
@@ -158,11 +170,11 @@ export default function QuestionnairePage() {
       } else {
         calculateAndSetResults();
       }
-      router.push("/assessment/results");
+      router.push("/assessment/hub");
     } catch (err) {
       console.error("[Questionnaire] Error finishing assessment:", err);
-      // Still navigate to results even if calculation fails
-      router.push("/assessment/results");
+      // Still navigate to hub even if calculation fails
+      router.push("/assessment/hub");
     }
   }, [instrument, calculateAndSetASRSResults, calculateAndSetResults, router]);
 
