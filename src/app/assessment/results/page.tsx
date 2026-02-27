@@ -18,6 +18,7 @@ import { RotateCcw, Download, Target } from "lucide-react";
 import { saveQuestionnaireResult } from "@/lib/supabase/questionnaire-results";
 import { createClient, supabaseConfigured } from "@/lib/supabase/client";
 import { saveQuestionnaireToBundle } from "@/lib/report-bundle";
+import { generateAndUploadPDF } from "@/lib/upload-report-pdf";
 
 const PDFDownloadButton = dynamic(
   () => import("@/components/report/PDFDownloadButton"),
@@ -68,6 +69,8 @@ export default function ResultsPage() {
       createClient().auth.getUser().then(({ data }) => {
         saveQuestionnaireResult(activeResult, sessionId, data.user?.id ?? null);
       });
+      // Generate PDF and upload to Supabase Storage (fire-and-forget)
+      generateAndUploadPDF(activeResult, sessionId);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

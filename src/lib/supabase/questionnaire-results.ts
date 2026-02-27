@@ -37,6 +37,14 @@ export async function saveQuestionnaireResult(
     multiple_settings: dsm?.dsm5Criteria.multipleSettings ?? null,
     before_age_12: dsm?.dsm5Criteria.beforeAge12 ?? null,
     significant_impact: dsm?.dsm5Criteria.significantImpact ?? null,
+
+    // Full response data as JSONB for Python PDF export
+    responses: result.responses,
+    context_responses: result.contextResponses,
+    followup_responses: result.followUpResponses,
+    interpretation: result.interpretation,
+    user_data: result.userData,
+    completed_at: result.completedAt,
   });
   if (error) {
     console.error(
@@ -44,4 +52,26 @@ export async function saveQuestionnaireResult(
       error.message
     );
   }
+}
+
+/** Fetch a single questionnaire result by session ID. */
+export async function getQuestionnaireResult(
+  sessionId: string
+): Promise<Record<string, unknown> | null> {
+  if (!supabaseConfigured) return null;
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("questionnaire_results")
+    .select("*")
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error) {
+    console.error("[Supabase] Failed to fetch questionnaire result:", error.message);
+    return null;
+  }
+  return data;
 }
