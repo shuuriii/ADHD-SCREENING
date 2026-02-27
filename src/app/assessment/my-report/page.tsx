@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { getBundle, type ReportBundle } from "@/lib/report-bundle";
-import { ArrowLeft, CheckCircle2, Circle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Circle, ArrowRight, Mail } from "lucide-react";
+import Button from "@/components/ui/Button";
+import EmailReportDialog from "@/components/assessment/EmailReportDialog";
+import { sendAssessmentReportEmail } from "@/lib/email-service";
 
 const CombinedPDFDownloadButton = dynamic(
   () => import("@/components/report/CombinedPDFDownloadButton"),
@@ -28,12 +32,39 @@ const CHECKLIST = [
   { key: "focusQuest",    label: "Focus Quest",   sub: "Working memory" },
 ] as const;
 
+const ASSESSMENT_LINKS: Record<string, string> = {
+  gonogo: "/assessment/gonogo",
+  chronos: "/assessment/chronos-task",
+  focusQuest: "/assessment/focus-quest",
+};
+
 export default function MyReportPage() {
+  const router = useRouter();
   const [bundle, setBundle] = useState<ReportBundle | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     setBundle(getBundle());
   }, []);
+
+  const handleEmailSubmit = async (email: string): Promise<boolean> => {
+    try {
+      const instrument = bundle?.questionnaire?.instrument ?? "dsm5";
+      const result = await sendAssessmentReportEmail(
+        email,
+        bundle?.userData || { name: "", gender: null, age: null, petPreference: null },
+        instrument,
+        `Complete Assessment Report`,
+        "Your comprehensive assessment report is attached."
+      );
+      return result.success;
+    } catch (error) {
+      console.error("Error sending email:", error);
+      return false;
+    }
+  };
 
   const avatar = bundle?.userData.petPreference
     ? AVATAR_EMOJI[bundle.userData.petPreference] ?? "🧠"
@@ -56,6 +87,23 @@ export default function MyReportPage() {
     if (!bundle) return false;
     if (key === "questionnaire") return Boolean(bundle.questionnaire);
     return Boolean(bundle.games[key as keyof typeof bundle.games]);
+  };
+
+  // Avoid hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-12">
+        <div className="text-center">
+          <div className="text-4xl mb-3">🧠</div>
+          <div className="h-8 bg-gray-200 rounded w-2/3 mx-auto mb-4 animate-pulse" />
+          <div className="h-4 bg-gray-100 rounded w-1/2 mx-auto animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
+  const handleContinueAssessment = (path: string) => {
+    router.push(path);
   };
 
   return (
@@ -83,13 +131,14 @@ export default function MyReportPage() {
         <div className="bg-white rounded-2xl border border-border/50 shadow-sm divide-y divide-border/30 mb-8">
           {CHECKLIST.map(({ key, label, sub }) => {
             const done = isComplete(key);
+            const linkPath = ASSESSMENT_LINKS[key];
             return (
               <div key={key} className="flex items-center gap-4 px-5 py-4">
                 {done
                   ? <CheckCircle2 size={20} className="text-[#46a83c] shrink-0" />
                   : <Circle size={20} className="text-border shrink-0" />
                 }
-                <div>
+                <div className="flex-1">
                   <p className={`text-sm font-medium ${done ? "text-foreground" : "text-muted"}`}>{label}</p>
                   <p className="text-xs text-muted/70">{sub}</p>
                 </div>
@@ -98,14 +147,37 @@ export default function MyReportPage() {
                     Done
                   </span>
                 )}
+                {!done && linkPath && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => handleContinueAssessment(linkPath)}
+                    className="ml-auto"
+                  >
+                    Continue
+                    <ArrowRight size={14} className="ml-1.5" />
+                  </Button>
+                )}
               </div>
             );
           })}
         </div>
 
-        {/* Download */}
+        {/* Download & Email */}
         <div className="flex flex-col items-center gap-3">
-          <CombinedPDFDownloadButton />
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
+            <CombinedPDFDownloadButton />
+            {bundle?.questionnaire && (
+              <Button
+                variant="secondary"
+                onClick={() => setShowEmailDialog(true)}
+                className="flex-1 sm:flex-none"
+              >
+                <Mail size={16} className="mr-2" />
+                Email Report
+              </Button>
+            )}
+          </div>
           {completedCount < 4 && (
             <p className="text-xs text-muted/60 text-center">
               Complete more tasks to add cognitive data to your report.
@@ -113,6 +185,13 @@ export default function MyReportPage() {
             </p>
           )}
         </div>
+
+        <EmailReportDialog
+          isOpen={showEmailDialog}
+          onClose={() => setShowEmailDialog(false)}
+          onSubmit={handleEmailSubmit}
+          userName={bundle?.userData.name !== "Anonymous" ? bundle?.userData.name : undefined}
+        />
 
       </motion.div>
     </div>

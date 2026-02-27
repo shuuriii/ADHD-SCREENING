@@ -127,7 +127,7 @@ export default function QuestionnairePage() {
     } else {
       calculateAndSetResults();
     }
-    router.push("/assessment/results");
+    router.push("/assessment/my-report");
   }, [instrument, calculateAndSetASRSResults, calculateAndSetResults, router]);
 
   const handleFollowUpResponse = useCallback(

@@ -16,8 +16,8 @@ export default function ResultsChoicePage() {
   const fromContext = searchParams.get("from") === "context";
 
   const handleDownloadPartial = () => {
-    // Mark for partial results and go to partial results page
-    router.push("/assessment/partial-results");
+    // Go to report page where they can download
+    router.push("/assessment/my-report");
   };
 
   const handleContinueAssessment = () => {
