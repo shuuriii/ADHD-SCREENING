@@ -191,8 +191,14 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
   }, [state]);
 
   const computeFollowUps = () => {
-    const followUps = determineFollowUps(state.responses, state.userData.gender);
-    dispatch({ type: "SET_FOLLOWUPS", payload: followUps });
+    try {
+      const followUps = determineFollowUps(state.responses, state.userData.gender);
+      dispatch({ type: "SET_FOLLOWUPS", payload: followUps });
+    } catch (error) {
+      console.error("Error determining follow-ups:", error);
+      // If follow-ups fail to compute, dispatch empty array to continue
+      dispatch({ type: "SET_FOLLOWUPS", payload: [] });
+    }
   };
 
   const calculateAndSetResults = () => {

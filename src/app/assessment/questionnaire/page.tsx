@@ -118,12 +118,16 @@ export default function QuestionnairePage() {
           dispatch({ type: "NEXT_QUESTION" });
         } else {
           // After context questions, show choice to continue or download
-          computeFollowUps();
+          try {
+            computeFollowUps();
+          } catch (error) {
+            console.error("Error computing follow-ups:", error);
+          }
           router.push("/assessment/results-choice?from=context");
         }
       }, 350);
     },
-    [currentQuestionIndex, dispatch, computeFollowUps]
+    [currentQuestionIndex, dispatch, computeFollowUps, router]
   );
 
   const finishAssessment = useCallback(() => {
