@@ -30,6 +30,19 @@ import {
   evaluateASRSCriteria,
 } from "@/questionnaire/asrs-scoring";
 
+// Generate UUID v4 - works in both browser and Node.js environments
+function generateUUID(): string {
+  if (typeof globalThis !== "undefined" && globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+  // Fallback for environments without randomUUID
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 type Phase = "intake" | "main" | "context" | "followups" | "results";
 
 interface AssessmentState {
@@ -187,7 +200,7 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
     );
 
     const result: AssessmentResult = {
-      assessmentId: crypto.randomUUID(),
+      assessmentId: generateUUID(),
       instrument: "dsm5",
       userData: state.userData,
       domainA,
@@ -218,7 +231,7 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
     );
 
     const result: ASRSResult = {
-      assessmentId: crypto.randomUUID(),
+      assessmentId: generateUUID(),
       instrument: "asrs",
       userData: state.userData,
       domainA: asrsScores.inattention,
