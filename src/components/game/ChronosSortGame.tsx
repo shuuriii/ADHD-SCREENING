@@ -52,6 +52,7 @@ interface HistoryEntry {
 
 interface Props {
   onComplete?: (scores: ChronosScores) => void;
+  onReturn?: () => void;
 }
 
 function loadHistory(): HistoryEntry[] {
@@ -73,7 +74,7 @@ function saveHistory(scores: ChronosScores) {
   }
 }
 
-export default function ChronosSortGame({ onComplete }: Props) {
+export default function ChronosSortGame({ onComplete, onReturn }: Props) {
   const [screen, setScreen] = useState<Screen>("welcome");
   const [heldItem, setHeldItem] = useState<HeldItem | null>(null);
   const [isHolding, setIsHolding] = useState(false);
@@ -743,12 +744,22 @@ export default function ChronosSortGame({ onComplete }: Props) {
             These scores are for screening only — not a diagnosis.
           </div>
 
-          <button
-            onClick={restart}
-            className="bg-transparent text-[#dde3f0] border border-[#252a38] font-bold text-[15px] px-12 py-4 rounded-lg hover:border-[#00d4c8] hover:text-[#00d4c8] transition-all"
-          >
-            Play Again
-          </button>
+          <div className="flex gap-3 flex-wrap justify-center">
+            <button
+              onClick={restart}
+              className="bg-transparent text-[#dde3f0] border border-[#252a38] font-bold text-[15px] px-12 py-4 rounded-lg hover:border-[#00d4c8] hover:text-[#00d4c8] transition-all"
+            >
+              Play Again
+            </button>
+            {onReturn && (
+              <button
+                onClick={onReturn}
+                className="bg-transparent text-[#dde3f0] border border-[#252a38] font-bold text-[15px] px-12 py-4 rounded-lg hover:border-[#34d399] hover:text-[#34d399] transition-all"
+              >
+                Back to Hub
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>

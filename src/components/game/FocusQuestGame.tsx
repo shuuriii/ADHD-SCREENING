@@ -71,6 +71,7 @@ interface HistoryEntry {
 
 interface Props {
   onComplete?: (scores: FocusQuestScores) => void;
+  onReturn?: () => void;
 }
 
 // ─── History helpers ────────────────────────────────────────────────────────
@@ -149,7 +150,7 @@ function getAXTrialType(prevEmoji: string | null, curEmoji: string): AXTrialType
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export default function FocusQuestGame({ onComplete }: Props) {
+export default function FocusQuestGame({ onComplete, onReturn }: Props) {
   const [screen, setScreen] = useState<Screen>("welcome");
   const [stimulus, setStimulus] = useState<Stimulus | null>(null);
   const [showStim, setShowStim] = useState(false);
@@ -861,12 +862,22 @@ export default function FocusQuestGame({ onComplete }: Props) {
             These scores are for screening only — not a diagnosis.
           </div>
 
-          <button
-            onClick={restart}
-            className="bg-transparent text-[#e0f2fe] border border-[#1e3a5c] font-bold text-[15px] px-12 py-4 rounded-lg hover:border-[#38bdf8] hover:text-[#38bdf8] transition-all"
-          >
-            Play Again
-          </button>
+          <div className="flex gap-3 flex-wrap justify-center">
+            <button
+              onClick={restart}
+              className="bg-transparent text-[#e0f2fe] border border-[#1e3a5c] font-bold text-[15px] px-12 py-4 rounded-lg hover:border-[#38bdf8] hover:text-[#38bdf8] transition-all"
+            >
+              Play Again
+            </button>
+            {onReturn && (
+              <button
+                onClick={onReturn}
+                className="bg-transparent text-[#e0f2fe] border border-[#1e3a5c] font-bold text-[15px] px-12 py-4 rounded-lg hover:border-[#34d399] hover:text-[#34d399] transition-all"
+              >
+                Back to Hub
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>

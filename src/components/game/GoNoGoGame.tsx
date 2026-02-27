@@ -42,6 +42,7 @@ interface FeedbackData {
 
 interface GoNoGoGameProps {
   onComplete?: (scores: GoNoGoScores) => void;
+  onReturn?: () => void;
 }
 
 function loadHistory(): FocusTaskEntry[] {
@@ -63,7 +64,7 @@ function saveToHistory(scores: GoNoGoScores) {
   }
 }
 
-export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
+export default function GoNoGoGame({ onComplete, onReturn }: GoNoGoGameProps) {
   const [screen, setScreen] = useState<Screen>("welcome");
   const [trialInfo, setTrialInfo] = useState("");
   const [activeCell, setActiveCell] = useState<{ index: number; type: "go" | "nogo" } | null>(null);
@@ -531,9 +532,16 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
             These scores are for clinical screening only — not a diagnosis.<br />
             A clinician will review your full profile.
           </div>
-          <button onClick={restart} className="bg-transparent text-[#dde3f0] border border-[#252a38] font-bold text-[15px] px-12 py-4 rounded-lg hover:border-[#4f8ef7] hover:text-[#4f8ef7] transition-all">
-            Play Again
-          </button>
+          <div className="flex gap-3 flex-wrap justify-center">
+            <button onClick={restart} className="bg-transparent text-[#dde3f0] border border-[#252a38] font-bold text-[15px] px-12 py-4 rounded-lg hover:border-[#4f8ef7] hover:text-[#4f8ef7] transition-all">
+              Play Again
+            </button>
+            {onReturn && (
+              <button onClick={onReturn} className="bg-transparent text-[#dde3f0] border border-[#252a38] font-bold text-[15px] px-12 py-4 rounded-lg hover:border-[#34d399] hover:text-[#34d399] transition-all">
+                Back to Hub
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
