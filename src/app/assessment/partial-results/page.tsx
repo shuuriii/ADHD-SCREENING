@@ -8,6 +8,7 @@ import { useAssessment } from "@/contexts/AssessmentContext";
 import ScoreSummary from "@/components/results/ScoreSummary";
 import PresentationTypeCard from "@/components/results/PresentationType";
 import Button from "@/components/ui/Button";
+import SafePDFDownloadWrapper from "@/components/report/SafePDFDownloadWrapper";
 import Link from "next/link";
 import { RotateCcw, Download, ArrowRight, Info } from "lucide-react";
 import { saveQuestionnaireToBundle } from "@/lib/report-bundle";
@@ -108,6 +109,7 @@ export default function PartialResultsPage() {
         className="bg-white rounded-2xl shadow-sm border border-border/50 p-6 mb-8"
       >
         <h2 className="font-semibold text-foreground mb-4">Download Your Report</h2>
+        <SafePDFDownloadWrapper>
         <PartialPDFDownloadButton
           completedPhases={state.currentPhase}
           responses={state.responses}
@@ -115,6 +117,7 @@ export default function PartialResultsPage() {
           userData={userData}
           instrument={instrument}
         />
+        </SafePDFDownloadWrapper>
       </motion.div>
 
       {/* Action Buttons */}

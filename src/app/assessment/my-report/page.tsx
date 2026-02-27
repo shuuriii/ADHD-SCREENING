@@ -8,6 +8,7 @@ import Link from "next/link";
 import { getBundle, saveQuestionnaireToBundle, type ReportBundle } from "@/lib/report-bundle";
 import { ArrowLeft, CheckCircle2, Circle, ArrowRight, Mail } from "lucide-react";
 import Button from "@/components/ui/Button";
+import SafePDFDownloadWrapper from "@/components/report/SafePDFDownloadWrapper";
 import EmailReportDialog from "@/components/assessment/EmailReportDialog";
 import { sendAssessmentReportEmail } from "@/lib/email-service";
 import { useAssessment } from "@/contexts/AssessmentContext";
@@ -180,7 +181,9 @@ export default function MyReportPage() {
         {/* Download & Email */}
         <div className="flex flex-col items-center gap-3">
           <div className="flex flex-col sm:flex-row gap-3 w-full">
-            <CombinedPDFDownloadButton />
+            <SafePDFDownloadWrapper>
+              <CombinedPDFDownloadButton />
+            </SafePDFDownloadWrapper>
             {bundle?.questionnaire && (
               <Button
                 variant="secondary"

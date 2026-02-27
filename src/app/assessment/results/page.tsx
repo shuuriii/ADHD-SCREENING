@@ -13,6 +13,7 @@ import GenderInsights from "@/components/results/GenderInsights";
 import Recommendations from "@/components/results/Recommendations";
 import FocusTaskCard from "@/components/results/FocusTaskCard";
 import EmailReportDialog from "@/components/assessment/EmailReportDialog";
+import SafePDFDownloadWrapper from "@/components/report/SafePDFDownloadWrapper";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
 import { RotateCcw, Download, Target } from "lucide-react";
@@ -168,12 +169,14 @@ export default function ResultsPage() {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.7 }}
       >
-        {instrument === "dsm5" && results && (
-          <PDFDownloadButton results={results} />
-        )}
-        {instrument === "asrs" && asrsResult && (
-          <ASRSPDFDownloadButton results={asrsResult} />
-        )}
+        <SafePDFDownloadWrapper>
+          {instrument === "dsm5" && results && (
+            <PDFDownloadButton results={results} />
+          )}
+          {instrument === "asrs" && asrsResult && (
+            <ASRSPDFDownloadButton results={asrsResult} />
+          )}
+        </SafePDFDownloadWrapper>
         <Button variant="secondary" onClick={handleStartNew}>
           <RotateCcw size={16} className="mr-2" />
           Start New Assessment
