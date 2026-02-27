@@ -66,9 +66,14 @@ export default function ResultsPage() {
     // Save questionnaire result to Supabase once on mount (fire-and-forget)
     const sessionId = localStorage.getItem("fayth-session-id");
     if (sessionId && supabaseConfigured) {
-      createClient().auth.getUser().then(({ data }) => {
-        saveQuestionnaireResult(activeResult, sessionId, data.user?.id ?? null);
-      });
+      createClient()
+        .auth.getUser()
+        .then(({ data }) => {
+          saveQuestionnaireResult(activeResult, sessionId, data.user?.id ?? null);
+        })
+        .catch((err) => {
+          console.error("[Auth] Failed to get user:", err);
+        });
       // Generate PDF and upload to Supabase Storage (fire-and-forget)
       generateAndUploadPDF(activeResult, sessionId);
     }
