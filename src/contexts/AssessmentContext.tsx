@@ -186,69 +186,79 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
   };
 
   const calculateAndSetResults = () => {
-    const domainA = calculateDomainScore(state.responses, "A");
-    const domainB = calculateDomainScore(state.responses, "B");
-    const presentationType = determinePresentationType(domainA, domainB);
-    const criteria = evaluateDSM5Criteria(domainA, domainB, state.contextResponses);
-    const interpretation = interpretDSM5Results(
-      domainA,
-      domainB,
-      presentationType,
-      criteria,
-      state.userData.gender,
-      state.followUpResponses
-    );
+    try {
+      const domainA = calculateDomainScore(state.responses, "A");
+      const domainB = calculateDomainScore(state.responses, "B");
+      const presentationType = determinePresentationType(domainA, domainB);
+      const criteria = evaluateDSM5Criteria(domainA, domainB, state.contextResponses);
+      const interpretation = interpretDSM5Results(
+        domainA,
+        domainB,
+        presentationType,
+        criteria,
+        state.userData.gender,
+        state.followUpResponses
+      );
 
-    const result: AssessmentResult = {
-      assessmentId: generateUUID(),
-      instrument: "dsm5",
-      userData: state.userData,
-      domainA,
-      domainB,
-      presentationType,
-      dsm5Criteria: criteria,
-      interpretation,
-      responses: state.responses,
-      contextResponses: state.contextResponses,
-      followUpResponses: state.followUpResponses,
-      completedAt: new Date().toISOString(),
-    };
+      const result: AssessmentResult = {
+        assessmentId: generateUUID(),
+        instrument: "dsm5",
+        userData: state.userData,
+        domainA,
+        domainB,
+        presentationType,
+        dsm5Criteria: criteria,
+        interpretation,
+        responses: state.responses,
+        contextResponses: state.contextResponses,
+        followUpResponses: state.followUpResponses,
+        completedAt: new Date().toISOString(),
+      };
 
-    dispatch({ type: "SET_RESULTS", payload: result });
-    saveToHistory(result);
+      dispatch({ type: "SET_RESULTS", payload: result });
+      saveToHistory(result);
+    } catch (error) {
+      console.error("Error calculating DSM5 results:", error);
+      throw error;
+    }
   };
 
   const calculateAndSetASRSResults = () => {
-    const asrsScores = calculateASRSScores(state.responses, asrsQuestions);
-    const presentationType = determineASRSPresentation(asrsScores.partAHighRisk);
-    const criteria = evaluateASRSCriteria(asrsScores.partAHighRisk, state.contextResponses);
-    const interpretation = interpretASRSResults(
-      asrsScores,
-      presentationType,
-      state.contextResponses,
-      state.userData.gender,
-      state.followUpResponses
-    );
+    try {
+      const asrsScores = calculateASRSScores(state.responses, asrsQuestions);
+      const presentationType = determineASRSPresentation(asrsScores.partAHighRisk);
+      const criteria = evaluateASRSCriteria(asrsScores.partAHighRisk, state.contextResponses);
+      const interpretation = interpretASRSResults(
+        asrsScores,
+        presentationType,
+        state.contextResponses,
+        state.userData.gender,
+        state.followUpResponses
+      );
 
-    const result: ASRSResult = {
-      assessmentId: generateUUID(),
-      instrument: "asrs",
-      userData: state.userData,
-      domainA: asrsScores.inattention,
-      domainB: asrsScores.hyperactivity,
-      presentationType,
-      dsm5Criteria: criteria,
-      interpretation,
-      partAShadedCount: asrsScores.partAShadedCount,
-      partAHighRisk: asrsScores.partAHighRisk,
-      responses: state.responses,
-      contextResponses: state.contextResponses,
-      followUpResponses: state.followUpResponses,
-      completedAt: new Date().toISOString(),
-    };
+      const result: ASRSResult = {
+        assessmentId: generateUUID(),
+        instrument: "asrs",
+        userData: state.userData,
+        domainA: asrsScores.inattention,
+        domainB: asrsScores.hyperactivity,
+        presentationType,
+        dsm5Criteria: criteria,
+        interpretation,
+        partAShadedCount: asrsScores.partAShadedCount,
+        partAHighRisk: asrsScores.partAHighRisk,
+        responses: state.responses,
+        contextResponses: state.contextResponses,
+        followUpResponses: state.followUpResponses,
+        completedAt: new Date().toISOString(),
+      };
 
-    dispatch({ type: "SET_ASRS_RESULTS", payload: result });
-    saveToHistory(result);
+      dispatch({ type: "SET_ASRS_RESULTS", payload: result });
+      saveToHistory(result);
+    } catch (error) {
+      console.error("Error calculating ASRS results:", error);
+      throw error;
+    }
   };
 
   return (
@@ -268,8 +278,9 @@ function saveToHistory(result: AssessmentResult | ASRSResult) {
       : [];
     history.unshift(result);
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-  } catch {
-    // localStorage unavailable
+  } catch (error) {
+    console.warn("Warning: Could not save to history:", error);
+    // localStorage unavailable or quota exceeded - this is non-critical
   }
 }
 
