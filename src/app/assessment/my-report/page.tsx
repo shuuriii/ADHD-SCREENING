@@ -106,10 +106,19 @@ export default function MyReportPage() {
         {/* Download */}
         <div className="flex flex-col items-center gap-3">
           <CombinedPDFDownloadButton />
-          {completedCount < 4 && (
+          {!bundle?.questionnaire && (
+            <p className="text-xs text-muted/60 text-center">
+              Start with the questionnaire to begin your assessment.
+            </p>
+          )}
+          {bundle?.questionnaire && !(bundle?.games.gonogo || bundle?.games.chronos || bundle?.games.focusQuest) && (
+            <p className="text-xs text-muted/60 text-center">
+              Complete one cognitive game to unlock your free assessment PDF.
+            </p>
+          )}
+          {completedCount > 2 && (
             <p className="text-xs text-muted/60 text-center">
               Complete more tasks to add cognitive data to your report.
-              <br />You can download after finishing just the questionnaire.
             </p>
           )}
         </div>

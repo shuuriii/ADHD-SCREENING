@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { getBundle } from "@/lib/report-bundle";
 import Button from "@/components/ui/Button";
@@ -21,14 +22,46 @@ const PDFDownloadLink = dynamic(
 const CombinedPDFReport = dynamic(() => import("./CombinedPDFReport"), { ssr: false });
 
 export default function CombinedPDFDownloadButton() {
-  const bundle = getBundle();
+  const [bundle, setBundle] = useState<ReturnType<typeof getBundle>>(null);
 
-  if (!bundle || !bundle.questionnaire) {
+  useEffect(() => {
+    setBundle(getBundle());
+  }, []);
+
+  if (!bundle) {
+    return (
+      <Button disabled>
+        <Download size={16} className="mr-2" />
+        Loading...
+      </Button>
+    );
+  }
+
+  if (!bundle.questionnaire) {
     return (
       <Button disabled>
         <Download size={16} className="mr-2" />
         Complete the questionnaire first
       </Button>
+    );
+  }
+
+  const hasGame =
+    !!bundle.games.gonogo ||
+    !!bundle.games.chronos ||
+    !!bundle.games.focusQuest;
+
+  if (!hasGame) {
+    return (
+      <div className="flex flex-col items-center gap-2">
+        <Button disabled>
+          <Download size={16} className="mr-2" />
+          Complete a cognitive game to unlock PDF
+        </Button>
+        <p className="text-xs text-muted/60 text-center">
+          Add objective behavioral data with Go/No-Go, Chronos Sort, or Focus Quest.
+        </p>
+      </div>
     );
   }
 

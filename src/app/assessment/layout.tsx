@@ -7,6 +7,7 @@ import SoundToggle from "@/components/ui/SoundToggle";
 import AnswerBurst from "@/components/assessment/AnswerBurst";
 import CursorGlow from "@/components/ui/CursorGlow";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
+import AssessmentGuard from "@/components/assessment/AssessmentGuard";
 
 export default function AssessmentLayout({
   children,
@@ -19,6 +20,7 @@ export default function AssessmentLayout({
         <SoundProvider>
           <CursorGlow />
           <AnswerBurst />
+          <AssessmentGuard />
           <Header />
           <div className="min-h-screen bg-gradient-to-b from-primary-50 via-white to-calm-neutral">
             {children}
