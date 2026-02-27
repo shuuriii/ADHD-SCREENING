@@ -21,6 +21,7 @@ const TOTAL_CONTEXT = 3;
 
 export default function QuestionnairePage() {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const {
     state,
     dispatch,
@@ -55,10 +56,14 @@ export default function QuestionnairePage() {
 
   // Redirect if no user data
   useEffect(() => {
-    if (!state.userData.gender && currentPhase !== "results") {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && !state.userData.gender && currentPhase !== "results") {
       router.replace("/assessment/intake");
     }
-  }, [state.userData.gender, currentPhase, router]);
+  }, [state.userData.gender, currentPhase, router, mounted]);
 
   // Calculate progress
   const getProgress = () => {
@@ -290,6 +295,19 @@ export default function QuestionnairePage() {
   };
 
   if (!state.userData.gender) return null;
+
+  // Show loading state until hydration completes
+  if (!mounted) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <div className="space-y-6">
+          <div className="h-4 bg-gray-200 rounded animate-pulse" />
+          <div className="h-32 bg-gray-100 rounded-2xl animate-pulse" />
+          <div className="h-12 bg-gray-200 rounded-lg animate-pulse w-1/3" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">

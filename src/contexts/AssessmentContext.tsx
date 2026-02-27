@@ -92,7 +92,17 @@ function reducer(state: AssessmentState, action: Action): AssessmentState {
     case "SET_USER_DATA":
       return { ...state, userData: action.payload, currentPhase: "main" };
     case "SET_INSTRUMENT":
-      return { ...state, instrument: action.payload, currentPhase: "main", currentQuestionIndex: 0, responses: {}, contextResponses: {}, followUpResponses: {} };
+      // Reset questionnaire state when switching instruments
+      return {
+        ...state,
+        instrument: action.payload,
+        currentPhase: "main",
+        currentQuestionIndex: 0,
+        responses: {},
+        contextResponses: {},
+        followUpResponses: {},
+        followUpQuestions: [],
+      };
     case "RECORD_RESPONSE":
       return {
         ...state,
