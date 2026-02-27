@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import type { AssessmentResult } from "@/questionnaire/types";
 import Button from "@/components/ui/Button";
 import { Download } from "lucide-react";
+import PDFReport from "./PDFReport";
 
 const PDFDownloadLink = dynamic(
   () => import("@react-pdf/renderer").then((mod) => mod.PDFDownloadLink),
@@ -17,8 +18,6 @@ const PDFDownloadLink = dynamic(
     ),
   }
 );
-
-const PDFReport = dynamic(() => import("./PDFReport"), { ssr: false });
 
 interface PDFDownloadButtonProps {
   results: AssessmentResult;

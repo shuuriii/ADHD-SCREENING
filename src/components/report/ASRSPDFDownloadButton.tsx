@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import type { ASRSResult } from "@/questionnaire/types";
 import Button from "@/components/ui/Button";
 import { Download } from "lucide-react";
+import ASRSPDFReport from "./ASRSPDFReport";
 
 const PDFDownloadLink = dynamic(
   () => import("@react-pdf/renderer").then((mod) => mod.PDFDownloadLink),
@@ -17,8 +18,6 @@ const PDFDownloadLink = dynamic(
     ),
   }
 );
-
-const ASRSPDFReport = dynamic(() => import("./ASRSPDFReport"), { ssr: false });
 
 interface ASRSPDFDownloadButtonProps {
   results: ASRSResult;
