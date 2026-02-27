@@ -259,8 +259,10 @@ export default function AssessmentMapPage() {
   const { state, dispatch } = useAssessment();
   const { name, petPreference } = state.userData;
   const [bundle, setBundle] = useState<ReportBundle | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     setBundle(getBundle());
   }, []);
 
@@ -278,6 +280,21 @@ export default function AssessmentMapPage() {
     }
     router.push(node.href);
   };
+
+  // Avoid hydration mismatch by not rendering until client-side bundle is loaded
+  if (!mounted) {
+    return (
+      <div className="min-h-screen px-4 py-12">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center">
+            <div className="text-4xl mb-3">🧠</div>
+            <div className="h-8 bg-gray-200 rounded w-2/3 mx-auto mb-4 animate-pulse" />
+            <div className="h-4 bg-gray-100 rounded w-1/2 mx-auto animate-pulse" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen px-4 py-12">
