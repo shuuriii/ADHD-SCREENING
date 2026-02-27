@@ -14,7 +14,7 @@ import Recommendations from "@/components/results/Recommendations";
 import FocusTaskCard from "@/components/results/FocusTaskCard";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
-import { RotateCcw, Download, Target } from "lucide-react";
+import { RotateCcw, Download, Target, ArrowLeft } from "lucide-react";
 import { saveQuestionnaireResult } from "@/lib/supabase/questionnaire-results";
 import { createClient, supabaseConfigured } from "@/lib/supabase/client";
 import { saveQuestionnaireToBundle } from "@/lib/report-bundle";
@@ -49,7 +49,7 @@ const ASRSPDFDownloadButton = dynamic(
 export default function ResultsPage() {
   const router = useRouter();
   const { state, dispatch } = useAssessment();
-  const { instrument, results, asrsResult, userData } = state;
+  const { instrument, results, asrsResult, userData, completedQuestionnaires } = state;
 
   const activeResult = instrument === "asrs" ? asrsResult : results;
 
@@ -126,6 +126,37 @@ export default function ResultsPage() {
 
       <FocusTaskCard />
 
+      {/* Recommendation for completing both questionnaires */}
+      {((instrument === "dsm5" && !completedQuestionnaires.asrs) ||
+        (instrument === "asrs" && !completedQuestionnaires.dsm5)) && (
+        <motion.div
+          className="bg-blue-50 rounded-2xl p-5 mb-6 border border-blue-200/50"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <div className="flex items-start gap-3">
+            <Target size={20} className="text-blue-600 mt-0.5 shrink-0" />
+            <div>
+              <h3 className="font-semibold text-foreground mb-1">
+                Enhance your insights with both questionnaires
+              </h3>
+              <p className="text-sm text-muted mb-3">
+                {instrument === "dsm5"
+                  ? "You've completed the DSM-5 assessment. Add the quick ASRS screener (2 min) for a more comprehensive perspective."
+                  : "You've completed the ASRS screener. Add the comprehensive DSM-5 assessment (~15 min) for detailed diagnostic insights."}
+              </p>
+              <Link href="/assessment/hub">
+                <Button variant="secondary" size="sm">
+                  Go Back to Assessment Hub
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Cognitive games recommendation */}
       <motion.div
         className="bg-white rounded-2xl shadow-sm border border-border/50 p-5 mb-6"
         initial={{ opacity: 0, y: 20 }}
@@ -136,15 +167,15 @@ export default function ResultsPage() {
           <Target size={20} className="text-primary-600 mt-0.5 shrink-0" />
           <div>
             <h3 className="font-semibold text-foreground mb-1">
-              Want an additional cognitive measure?
+              Strengthen your report with cognitive tasks
             </h3>
             <p className="text-sm text-muted mb-3">
-              Try the Go/No-Go attention task — 15 minutes, no account needed.
-              It measures visual attention and impulse control with objective behavioral data.
+              Optional: Try the Go/No-Go attention task or other cognitive measures.
+              These add objective behavioral data to your assessment.
             </p>
-            <Link href="/assessment/focus-task">
+            <Link href="/assessment/hub">
               <Button variant="secondary" size="sm">
-                Start Focus Task
+                Back to Assessment Hub
               </Button>
             </Link>
           </div>
@@ -157,16 +188,26 @@ export default function ResultsPage() {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.7 }}
       >
-        {instrument === "dsm5" && results && (
-          <PDFDownloadButton results={results} />
-        )}
-        {instrument === "asrs" && asrsResult && (
-          <ASRSPDFDownloadButton results={asrsResult} />
-        )}
-        <Button variant="secondary" onClick={handleStartNew}>
-          <RotateCcw size={16} className="mr-2" />
-          Start New Assessment
+        <Button
+          variant="ghost"
+          onClick={() => router.push("/assessment/hub")}
+          className="flex-1"
+        >
+          <ArrowLeft size={16} className="mr-2" />
+          Back to Hub
         </Button>
+        <div className="flex gap-3 flex-1">
+          {instrument === "dsm5" && results && (
+            <PDFDownloadButton results={results} />
+          )}
+          {instrument === "asrs" && asrsResult && (
+            <ASRSPDFDownloadButton results={asrsResult} />
+          )}
+          <Button variant="secondary" onClick={handleStartNew} className="flex-1">
+            <RotateCcw size={16} className="mr-2" />
+            Start New
+          </Button>
+        </div>
       </motion.div>
     </div>
   );
