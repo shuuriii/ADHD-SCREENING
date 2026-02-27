@@ -107,35 +107,49 @@ export default function QuestionnairePage() {
 
   const handleContextResponse = useCallback(
     (questionId: string, value: string) => {
-      dispatch({
-        type: "RECORD_CONTEXT_RESPONSE",
-        payload: { questionId, value },
-      });
+      try {
+        dispatch({
+          type: "RECORD_CONTEXT_RESPONSE",
+          payload: { questionId, value },
+        });
 
-      setTimeout(() => {
-        if (currentQuestionIndex < TOTAL_CONTEXT - 1) {
-          dispatch({ type: "NEXT_QUESTION" });
-        } else {
-          // Determine follow-ups and transition
-          computeFollowUps();
-          setPhaseTransitionData({
-            title: "Almost there!",
-            subtitle: "A few personalized follow-up questions.",
-          });
-          setShowPhaseTransition(true);
-        }
-      }, 350);
+        setTimeout(() => {
+          if (currentQuestionIndex < TOTAL_CONTEXT - 1) {
+            dispatch({ type: "NEXT_QUESTION" });
+          } else {
+            // Determine follow-ups and transition
+            try {
+              computeFollowUps();
+            } catch (err) {
+              console.error("[Questionnaire] Error computing follow-ups:", err);
+            }
+            setPhaseTransitionData({
+              title: "Almost there!",
+              subtitle: "A few personalized follow-up questions.",
+            });
+            setShowPhaseTransition(true);
+          }
+        }, 350);
+      } catch (err) {
+        console.error("[Questionnaire] Error in context response:", err);
+      }
     },
     [currentQuestionIndex, dispatch, computeFollowUps]
   );
 
   const finishAssessment = useCallback(() => {
-    if (instrument === "asrs") {
-      calculateAndSetASRSResults();
-    } else {
-      calculateAndSetResults();
+    try {
+      if (instrument === "asrs") {
+        calculateAndSetASRSResults();
+      } else {
+        calculateAndSetResults();
+      }
+      router.push("/assessment/results");
+    } catch (err) {
+      console.error("[Questionnaire] Error finishing assessment:", err);
+      // Still navigate to results even if calculation fails
+      router.push("/assessment/results");
     }
-    router.push("/assessment/results");
   }, [instrument, calculateAndSetASRSResults, calculateAndSetResults, router]);
 
   const handleFollowUpResponse = useCallback(
@@ -162,15 +176,22 @@ export default function QuestionnairePage() {
   );
 
   const handlePhaseTransitionComplete = useCallback(() => {
-    setShowPhaseTransition(false);
-    if (currentPhase === "main") {
-      dispatch({ type: "SET_PHASE", payload: "context" });
-    } else if (currentPhase === "context") {
-      if (state.followUpQuestions.length > 0 || followUpQuestions.length > 0) {
-        dispatch({ type: "SET_PHASE", payload: "followups" });
-      } else {
-        finishAssessment();
+    try {
+      setShowPhaseTransition(false);
+      if (currentPhase === "main") {
+        dispatch({ type: "SET_PHASE", payload: "context" });
+      } else if (currentPhase === "context") {
+        if (state.followUpQuestions.length > 0 || followUpQuestions.length > 0) {
+          dispatch({ type: "SET_PHASE", payload: "followups" });
+        } else {
+          finishAssessment();
+        }
       }
+    } catch (err) {
+      console.error("[Questionnaire] Error in phase transition:", err);
+      setShowPhaseTransition(false);
+      // Try to recover by finishing assessment
+      finishAssessment();
     }
   }, [
     currentPhase,
@@ -300,7 +321,7 @@ export default function QuestionnairePage() {
 
       <AnimatePresence mode="wait">{renderQuestion()}</AnimatePresence>
 
-      {currentQuestionIndex > 0 && (
+      {currentQuestionIndex > 0 && !showPhaseTransition && (
         <div className="mt-6">
           <Button variant="ghost" size="sm" onClick={handlePrevious}>
             <ChevronLeft size={16} className="mr-1" />
