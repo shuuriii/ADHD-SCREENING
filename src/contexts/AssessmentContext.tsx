@@ -202,6 +202,11 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
     };
 
     dispatch({ type: "SET_RESULTS", payload: result });
+    // Persist synchronously so sessionStorage is up-to-date before router.push
+    try {
+      const next = { ...state, results: result, currentPhase: "results" as const };
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(next));
+    } catch { /* noop */ }
     saveToHistory(result);
   };
 
@@ -235,6 +240,11 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
     };
 
     dispatch({ type: "SET_ASRS_RESULTS", payload: result });
+    // Persist synchronously so sessionStorage is up-to-date before router.push
+    try {
+      const next = { ...state, asrsResult: result, currentPhase: "results" as const };
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(next));
+    } catch { /* noop */ }
     saveToHistory(result);
   };
 

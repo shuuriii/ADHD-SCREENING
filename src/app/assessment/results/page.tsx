@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
@@ -18,6 +18,7 @@ import { RotateCcw, Download, Target } from "lucide-react";
 import { saveQuestionnaireResult } from "@/lib/supabase/questionnaire-results";
 import { createClient, supabaseConfigured } from "@/lib/supabase/client";
 import { saveQuestionnaireToBundle } from "@/lib/report-bundle";
+import type { AssessmentResult, ASRSResult } from "@/questionnaire/types";
 
 const PDFDownloadButton = dynamic(
   () => import("@/components/report/PDFDownloadButton"),
@@ -45,23 +46,53 @@ const ASRSPDFDownloadButton = dynamic(
   }
 );
 
+/** Try to recover results from sessionStorage if context is empty */
+function recoverResult(): { instrument: "dsm5" | "asrs"; result: AssessmentResult | ASRSResult; userData: AssessmentResult["userData"] } | null {
+  try {
+    const raw = sessionStorage.getItem("adhd-assessment-v2");
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    const inst = s.instrument as "dsm5" | "asrs";
+    const result = inst === "asrs" ? s.asrsResult : s.results;
+    if (!result) return null;
+    return { instrument: inst, result, userData: s.userData };
+  } catch {
+    return null;
+  }
+}
+
 export default function ResultsPage() {
   const router = useRouter();
   const { state, dispatch } = useAssessment();
   const { instrument, results, asrsResult, userData } = state;
+  const savedRef = useRef(false);
 
-  const activeResult = instrument === "asrs" ? asrsResult : results;
+  // Primary: context state. Fallback: sessionStorage.
+  const contextResult = instrument === "asrs" ? asrsResult : results;
+  const [fallback, setFallback] = useState<ReturnType<typeof recoverResult>>(null);
 
   useEffect(() => {
-    if (!activeResult) {
-      router.replace("/assessment/intake");
+    if (!contextResult) {
+      const recovered = recoverResult();
+      if (recovered) {
+        setFallback(recovered);
+      } else {
+        // No results anywhere — redirect after a short delay
+        const t = setTimeout(() => router.replace("/assessment/intake"), 1500);
+        return () => clearTimeout(t);
+      }
     }
-  }, [activeResult, router]);
+  }, [contextResult, router]);
+
+  const activeResult = contextResult ?? fallback?.result ?? null;
+  const activeInstrument = contextResult ? instrument : (fallback?.instrument ?? instrument);
+  const activeUserData = contextResult ? userData : (fallback?.userData ?? userData);
 
   useEffect(() => {
-    if (!activeResult) return;
+    if (!activeResult || savedRef.current) return;
+    savedRef.current = true;
     // Save to unified report bundle (local)
-    saveQuestionnaireToBundle(instrument, activeResult);
+    saveQuestionnaireToBundle(activeInstrument, activeResult);
     // Save questionnaire result to Supabase once on mount (fire-and-forget)
     const sessionId = localStorage.getItem("fayth-session-id");
     if (sessionId && supabaseConfigured) {
@@ -70,7 +101,7 @@ export default function ResultsPage() {
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [activeResult]);
 
   if (!activeResult) return null;
 
@@ -89,11 +120,11 @@ export default function ResultsPage() {
           Your Results
         </h1>
         <p className="text-xs text-muted mb-1">
-          {instrument === "asrs" ? "ASRS v1.1 Screener" : "DSM-5 Assessment"}
+          {activeInstrument === "asrs" ? "ASRS v1.1 Screener" : "DSM-5 Assessment"}
         </p>
-        {userData.name && userData.name !== "Anonymous" && (
+        {activeUserData.name && activeUserData.name !== "Anonymous" && (
           <p className="text-muted mb-2">
-            {userData.name}, age {userData.age}
+            {activeUserData.name}, age {activeUserData.age}
           </p>
         )}
         <p className="text-xs text-muted mb-8">
@@ -104,14 +135,14 @@ export default function ResultsPage() {
       <ScoreSummary domainA={activeResult.domainA} domainB={activeResult.domainB} />
       <PresentationTypeCard result={activeResult.presentationType} />
 
-      {instrument === "asrs" && asrsResult ? (
-        <ASRSPartACard result={asrsResult} />
-      ) : results ? (
+      {activeInstrument === "asrs" ? (
+        <ASRSPartACard result={activeResult as ASRSResult} />
+      ) : (
         <DSM5CriteriaCard
-          criteria={results.dsm5Criteria}
-          clinicalNote={results.interpretation.clinicalNote}
+          criteria={(activeResult as AssessmentResult).dsm5Criteria}
+          clinicalNote={(activeResult as AssessmentResult).interpretation.clinicalNote}
         />
-      ) : null}
+      )}
 
       <GenderInsights insights={activeResult.interpretation.genderInsights} />
       <Recommendations items={activeResult.interpretation.recommendations} />
@@ -149,11 +180,11 @@ export default function ResultsPage() {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.7 }}
       >
-        {instrument === "dsm5" && results && (
-          <PDFDownloadButton results={results} />
+        {activeInstrument === "dsm5" && (
+          <PDFDownloadButton results={activeResult as AssessmentResult} />
         )}
-        {instrument === "asrs" && asrsResult && (
-          <ASRSPDFDownloadButton results={asrsResult} />
+        {activeInstrument === "asrs" && (
+          <ASRSPDFDownloadButton results={activeResult as ASRSResult} />
         )}
         <Button variant="secondary" onClick={handleStartNew}>
           <RotateCcw size={16} className="mr-2" />

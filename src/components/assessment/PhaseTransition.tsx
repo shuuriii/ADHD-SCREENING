@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 interface PhaseTransitionProps {
   title: string;
@@ -14,10 +14,19 @@ export default function PhaseTransition({
   subtitle,
   onComplete,
 }: PhaseTransitionProps) {
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+  const calledRef = useRef(false);
+
   useEffect(() => {
-    const timer = setTimeout(onComplete, 2500);
+    const timer = setTimeout(() => {
+      if (!calledRef.current) {
+        calledRef.current = true;
+        onCompleteRef.current();
+      }
+    }, 2500);
     return () => clearTimeout(timer);
-  }, [onComplete]);
+  }, []);
 
   return (
     <motion.div
@@ -25,7 +34,12 @@ export default function PhaseTransition({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      onClick={onComplete}
+      onClick={() => {
+        if (!calledRef.current) {
+          calledRef.current = true;
+          onCompleteRef.current();
+        }
+      }}
     >
       <div className="text-center px-6">
         <motion.div

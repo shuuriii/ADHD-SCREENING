@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { useAssessment } from "@/contexts/AssessmentContext";
@@ -138,6 +138,19 @@ export default function QuestionnairePage() {
     router.push("/assessment/results");
   }, [instrument, calculateAndSetASRSResults, calculateAndSetResults, router]);
 
+  // If we enter followups phase but there are no questions, finish the assessment
+  const finishedRef = useRef(false);
+  useEffect(() => {
+    if (
+      currentPhase === "followups" &&
+      followUpQuestions.length === 0 &&
+      !finishedRef.current
+    ) {
+      finishedRef.current = true;
+      finishAssessment();
+    }
+  }, [currentPhase, followUpQuestions.length, finishAssessment]);
+
   const handleFollowUpResponse = useCallback(
     (questionId: string, value: LikertValue) => {
       dispatch({
@@ -267,7 +280,6 @@ export default function QuestionnairePage() {
     if (currentPhase === "followups") {
       const question = followUpQuestions[currentQuestionIndex];
       if (!question) {
-        finishAssessment();
         return null;
       }
       return (
