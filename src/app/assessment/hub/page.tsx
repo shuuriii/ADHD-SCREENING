@@ -204,7 +204,7 @@ export default function AssessmentHubPage() {
                   size="sm"
                   onClick={handleStartASRS}
                   className="shrink-0 ml-4"
-                  variant={completedQuestionnaires.dsm5 ? "default" : "secondary"}
+                  variant={completedQuestionnaires.dsm5 ? "primary" : "secondary"}
                 >
                   Start
                 </Button>
@@ -391,8 +391,8 @@ export default function AssessmentHubPage() {
         {canGetResults && (
           <Button
             onClick={handleGetResults}
-            className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
             size="lg"
+            className="flex-1"
           >
             ✓ Get Your Results
           </Button>
@@ -400,8 +400,9 @@ export default function AssessmentHubPage() {
         {!canGetResults && (
           <Button
             disabled
-            className="flex-1 bg-gray-200 text-gray-500"
+            variant="secondary"
             size="lg"
+            className="flex-1"
           >
             Complete a questionnaire first
           </Button>
