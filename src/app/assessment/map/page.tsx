@@ -277,6 +277,24 @@ export default function AssessmentMapPage() {
   const handleSelect = (node: MapNode) => {
     if (node.instrument) {
       dispatch({ type: "SET_INSTRUMENT", payload: node.instrument });
+      // Write to sessionStorage synchronously BEFORE navigation.
+      // The useEffect persistence fires too late — after router.push starts,
+      // so the new page would hydrate stale state without this.
+      try {
+        const updated = {
+          ...state,
+          instrument: node.instrument,
+          currentPhase: "main" as const,
+          currentQuestionIndex: 0,
+          responses: {},
+          contextResponses: {},
+          followUpResponses: {},
+          followUpQuestions: [],
+        };
+        sessionStorage.setItem("adhd-assessment-v2", JSON.stringify(updated));
+      } catch {
+        // sessionStorage unavailable
+      }
     }
     router.push(node.href);
   };

@@ -21,10 +21,19 @@ export default function ResultsChoicePage() {
   };
 
   const handleContinueAssessment = () => {
-    // Continue to next phase
+    let updated = { ...state };
     if (fromContext && state.followUpQuestions.length > 0) {
-      // Show phase transition then go to followups
       dispatch({ type: "SET_PHASE", payload: "followups" });
+      updated = { ...updated, currentPhase: "followups" as const, currentQuestionIndex: 0 };
+    } else {
+      dispatch({ type: "SET_PHASE", payload: "context" });
+      updated = { ...updated, currentPhase: "context" as const, currentQuestionIndex: 0 };
+    }
+    // Write synchronously before navigation
+    try {
+      sessionStorage.setItem("adhd-assessment-v2", JSON.stringify(updated));
+    } catch {
+      // sessionStorage unavailable
     }
     router.push("/assessment/questionnaire");
   };
