@@ -127,25 +127,31 @@ export default function ResultsPage() {
             {activeUserData.name}, age {activeUserData.age}
           </p>
         )}
-        <p className="text-xs text-muted mb-8">
-          Completed {new Date(activeResult.completedAt).toLocaleDateString()}
-        </p>
+        {activeResult.completedAt && (
+          <p className="text-xs text-muted mb-8">
+            Completed {new Date(activeResult.completedAt).toLocaleDateString()}
+          </p>
+        )}
       </motion.div>
 
-      <ScoreSummary domainA={activeResult.domainA} domainB={activeResult.domainB} />
-      <PresentationTypeCard result={activeResult.presentationType} />
+      {activeResult.domainA && activeResult.domainB && (
+        <ScoreSummary domainA={activeResult.domainA} domainB={activeResult.domainB} />
+      )}
+      {activeResult.presentationType && (
+        <PresentationTypeCard result={activeResult.presentationType} />
+      )}
 
       {activeInstrument === "asrs" ? (
         <ASRSPartACard result={activeResult as ASRSResult} />
-      ) : (
+      ) : activeResult.dsm5Criteria && activeResult.interpretation ? (
         <DSM5CriteriaCard
           criteria={(activeResult as AssessmentResult).dsm5Criteria}
           clinicalNote={(activeResult as AssessmentResult).interpretation.clinicalNote}
         />
-      )}
+      ) : null}
 
-      <GenderInsights insights={activeResult.interpretation.genderInsights} />
-      <Recommendations items={activeResult.interpretation.recommendations} />
+      <GenderInsights insights={activeResult.interpretation?.genderInsights ?? []} />
+      <Recommendations items={activeResult.interpretation?.recommendations ?? []} />
 
       <FocusTaskCard />
 

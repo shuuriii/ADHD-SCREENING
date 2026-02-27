@@ -9,16 +9,17 @@ interface Props {
 
 interface State {
   hasError: boolean;
+  errorMessage: string;
 }
 
 export default class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, errorMessage: "" };
   }
 
-  static getDerivedStateFromError(): State {
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, errorMessage: error.message || String(error) };
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
@@ -35,10 +36,15 @@ export default class ErrorBoundary extends Component<Props, State> {
           <h2 className="text-xl font-bold text-foreground mb-2">
             Something went wrong
           </h2>
-          <p className="text-sm text-muted mb-6 max-w-md">
+          <p className="text-sm text-muted mb-4 max-w-md">
             An unexpected error occurred. Your assessment data is safe — try
             refreshing the page.
           </p>
+          {this.state.errorMessage && (
+            <pre className="text-xs text-red-500 bg-red-50 rounded-lg p-3 mb-6 max-w-md overflow-auto text-left whitespace-pre-wrap">
+              {this.state.errorMessage}
+            </pre>
+          )}
           <button
             onClick={() => {
               this.setState({ hasError: false });
