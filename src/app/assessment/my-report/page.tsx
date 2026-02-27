@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { getBundle, type ReportBundle } from "@/lib/report-bundle";
+import { getBundle, saveQuestionnaireToBundle, type ReportBundle } from "@/lib/report-bundle";
 import { ArrowLeft, CheckCircle2, Circle, ArrowRight, Mail } from "lucide-react";
 import Button from "@/components/ui/Button";
 import EmailReportDialog from "@/components/assessment/EmailReportDialog";
 import { sendAssessmentReportEmail } from "@/lib/email-service";
+import { useAssessment } from "@/contexts/AssessmentContext";
 
 const CombinedPDFDownloadButton = dynamic(
   () => import("@/components/report/CombinedPDFDownloadButton"),
@@ -40,6 +41,7 @@ const ASSESSMENT_LINKS: Record<string, string> = {
 
 export default function MyReportPage() {
   const router = useRouter();
+  const { state } = useAssessment();
   const [bundle, setBundle] = useState<ReportBundle | null>(null);
   const [mounted, setMounted] = useState(false);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
@@ -48,6 +50,18 @@ export default function MyReportPage() {
     setMounted(true);
     setBundle(getBundle());
   }, []);
+
+  // Save results to bundle if they exist in state but not in bundle yet
+  useEffect(() => {
+    if (!mounted) return;
+    if (state.results && !bundle?.questionnaire) {
+      saveQuestionnaireToBundle("dsm5", state.results);
+      setBundle(getBundle());
+    } else if (state.asrsResult && !bundle?.questionnaire) {
+      saveQuestionnaireToBundle("asrs", state.asrsResult);
+      setBundle(getBundle());
+    }
+  }, [state.results, state.asrsResult, bundle?.questionnaire, mounted]);
 
   const handleEmailSubmit = async (email: string): Promise<boolean> => {
     try {
