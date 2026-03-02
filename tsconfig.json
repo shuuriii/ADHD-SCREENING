@@ -19,7 +19,16 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@/components": ["./src/components/index.ts"],
+      "@/components/*": ["./src/components/*"],
+      "@/lib": ["./src/lib/index.ts"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/types": ["./src/types/index.ts"],
+      "@/constants": ["./src/constants/index.ts"],
+      "@/config": ["./src/config/index.ts"],
+      "@/hooks": ["./src/hooks/index.ts"],
+      "@/contexts": ["./src/contexts/index.ts"]
     }
   },
   "include": [
