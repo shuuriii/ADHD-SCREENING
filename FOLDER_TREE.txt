@@ -1,0 +1,245 @@
+ADHD-SCREENING/
+│
+├── 📁 src/
+│   ├── 📁 app/                          # Next.js App Router (Pages & Routes)
+│   │   ├── page.tsx                     # Landing page
+│   │   ├── layout.tsx                   # Root layout
+│   │   ├── error.tsx                    # Error boundary
+│   │   ├── manifest.ts                  # PWA manifest
+│   │   ├── 📁 assessment/               # Assessment feature
+│   │   │   ├── layout.tsx
+│   │   │   ├── intake/page.tsx
+│   │   │   ├── questionnaire/page.tsx
+│   │   │   ├── focus-task/page.tsx
+│   │   │   ├── gonogo/page.tsx
+│   │   │   ├── chronos-task/page.tsx
+│   │   │   ├── focus-quest/page.tsx
+│   │   │   ├── results/page.tsx
+│   │   │   ├── my-report/page.tsx
+│   │   │   ├── history/page.tsx
+│   │   │   └── map/page.tsx
+│   │   ├── 📁 auth/                     # Authentication
+│   │   │   ├── callback/route.ts
+│   │   │   └── logout/route.ts
+│   │   └── 📁 api/                      # API Routes (Server)
+│   │
+│   ├── 📁 components/                   # React Components (Feature-organized)
+│   │   ├── index.ts                     # Main barrel export
+│   │   ├── 📁 ui/                       # Reusable UI Components
+│   │   │   ├── Button.tsx
+│   │   │   ├── Card.tsx
+│   │   │   ├── Header.tsx
+│   │   │   ├── QuitModal.tsx
+│   │   │   ├── ErrorBoundary.tsx
+│   │   │   ├── CursorGlow.tsx
+│   │   │   ├── SoundToggle.tsx
+│   │   │   ├── IllustratedHeading.tsx
+│   │   │   └── index.ts
+│   │   ├── 📁 assessment/               # Assessment Components
+│   │   │   ├── QuestionCard.tsx
+│   │   │   ├── LikertScale.tsx
+│   │   │   ├── AnswerBurst.tsx
+│   │   │   ├── ProgressBar.tsx
+│   │   │   ├── PhaseTransition.tsx
+│   │   │   ├── MilestoneAnimation.tsx
+│   │   │   ├── ContextQuestion.tsx
+│   │   │   ├── AssessmentGuard.tsx
+│   │   │   ├── SafeLink.tsx
+│   │   │   └── index.ts
+│   │   ├── 📁 game/                     # Game Components
+│   │   │   ├── GoNoGoGame.tsx
+│   │   │   ├── ChronosSortGame.tsx
+│   │   │   ├── FocusQuestGame.tsx
+│   │   │   └── index.ts
+│   │   ├── 📁 landing/                  # Landing Page Components
+│   │   │   ├── HeroSection.tsx
+│   │   │   ├── ValueProposition.tsx
+│   │   │   ├── GamesSection.tsx
+│   │   │   ├── JourneySection.tsx
+│   │   │   ├── CTASection.tsx
+│   │   │   ├── FluidBackground.tsx
+│   │   │   ├── SoundToggleWrapper.tsx
+│   │   │   └── index.ts
+│   │   ├── 📁 report/                   # Report Components
+│   │   │   ├── PDFDownloadButton.tsx
+│   │   │   ├── ASRSPDFDownloadButton.tsx
+│   │   │   ├── CombinedPDFDownloadButton.tsx
+│   │   │   ├── PDFReport.tsx
+│   │   │   ├── ASRSPDFReport.tsx
+│   │   │   ├── CombinedPDFReport.tsx
+│   │   │   ├── pdf-styles.ts
+│   │   │   └── index.ts
+│   │   ├── 📁 results/                  # Results Display Components
+│   │   │   ├── ASRSPartACard.tsx
+│   │   │   ├── DSM5Criteria.tsx
+│   │   │   ├── ScoreSummary.tsx
+│   │   │   ├── Recommendations.tsx
+│   │   │   ├── Disclaimer.tsx
+│   │   │   ├── FocusTaskCard.tsx
+│   │   │   ├── GenderInsights.tsx
+│   │   │   ├── PresentationType.tsx
+│   │   │   └── index.ts
+│   │
+│   ├── 📁 lib/                          # Utilities & Business Logic
+│   │   ├── index.ts                     # Main barrel export
+│   │   ├── 📁 supabase/                 # Database Operations
+│   │   │   ├── client.ts
+│   │   │   ├── server.ts
+│   │   │   ├── auth.ts
+│   │   │   ├── profiles.ts
+│   │   │   ├── sessions.ts
+│   │   │   ├── questionnaire-results.ts
+│   │   │   ├── game-scores.ts
+│   │   │   ├── chronos-scores.ts
+│   │   │   ├── focus-quest-scores.ts
+│   │   │   └── index.ts
+│   │   ├── 📁 audio/                    # Audio Management
+│   │   │   ├── soundManager.ts
+│   │   │   ├── types.ts
+│   │   │   └── index.ts
+│   │   ├── 📁 scoring/                  # Assessment Scoring (being refactored)
+│   │   │   └── index.ts
+│   │   ├── 📁 utils/                    # General Utilities
+│   │   │   ├── string.ts
+│   │   │   ├── number.ts
+│   │   │   ├── validation.ts
+│   │   │   ├── formatting.ts
+│   │   │   └── index.ts
+│   │   ├── 📁 pwa/                      # PWA Utilities (placeholder)
+│   │   │   └── index.ts
+│   │   └── 📁 api/                      # API Client Utilities (placeholder)
+│   │       └── index.ts
+│   │
+│   ├── 📁 contexts/                     # React Context Providers
+│   │   ├── AssessmentContext.tsx
+│   │   ├── SoundContext.tsx
+│   │   └── index.ts
+│   │
+│   ├── 📁 hooks/                        # Custom React Hooks
+│   │   ├── useSound.ts
+│   │   └── index.ts
+│   │
+│   ├── 📁 questionnaire/                # Assessment Questions & Data
+│   │   ├── types.ts
+│   │   ├── scoring.ts
+│   │   ├── asrs-scoring.ts
+│   │   ├── 📁 instruments/
+│   │   │   ├── 📁 dsm5/
+│   │   │   │   └── questions.ts
+│   │   │   └── 📁 asrs/
+│   │   │       └── questions.ts
+│   │   ├── context-questions.ts
+│   │   ├── 📁 followups/
+│   │   │   ├── general.ts
+│   │   │   ├── male.ts
+│   │   │   └── female.ts
+│   │   └── index.ts
+│   │
+│   ├── 📁 types/                        # Global Type Definitions
+│   │   └── index.ts
+│   │
+│   ├── 📁 constants/                    # Application Constants
+│   │   ├── routes.ts                    # Route paths
+│   │   ├── assessment.ts                # Assessment config
+│   │   ├── theme.ts                     # Design tokens
+│   │   ├── messages.ts                  # UI messages
+│   │   ├── game-config.ts               # Game configuration
+│   │   └── index.ts
+│   │
+│   ├── 📁 config/                       # Application Configuration
+│   │   ├── environment.ts               # Env validation
+│   │   ├── supabase.ts                  # Supabase config
+│   │   ├── analytics.ts                 # Analytics setup
+│   │   └── index.ts
+│   │
+│   ├── middleware.ts                    # Next.js middleware
+│   └── globals.css                      # Global styles
+│
+├── 📁 public/                           # Static Assets
+│   ├── manifest.json                    # PWA manifest
+│   ├── 📁 icons/                        # PWA app icons
+│   │   ├── icon-192.png
+│   │   ├── icon-512.png
+│   │   └── apple-touch-icon.png
+│   ├── 📁 images/                       # Static images
+│   │   ├── cat-avatar.png
+│   │   └── dog-avatar.png
+│   ├── 📁 sounds/                       # Audio files
+│   │   ├── ambient-rain.mp3
+│   │   ├── ambient-nature.mp3
+│   │   └── ambient-gentle.mp3
+│   └── 📁 service-workers/              # Service worker files
+│
+├── 📁 tests/                            # Test Files
+│   ├── 📁 unit/
+│   │   ├── 📁 lib/
+│   │   ├── 📁 hooks/
+│   │   └── 📁 utils/
+│   ├── 📁 integration/
+│   │   ├── 📁 assessment/
+│   │   └── 📁 auth/
+│   ├── 📁 e2e/
+│   ├── 📁 __fixtures__/                 # Test data
+│   ├── 📁 __mocks__/                    # Mock implementations
+│   └── setup.ts                         # Test setup
+│
+├── 📁 docs/                             # Documentation
+│   ├── FOLDER_STRUCTURE.md              # This structure
+│   ├── QUICK_REFERENCE.md               # Quick import reference
+│   ├── ARCHITECTURE.md                  # (planned)
+│   ├── DEVELOPMENT.md                   # (planned)
+│   └── DEPLOYMENT.md                    # (planned)
+│
+├── 📄 FOLDER_TREE.txt                   # This file
+├── 📄 .env.example                      # Environment template
+├── 📄 .env.local                        # Local env (git ignored)
+├── 📄 .gitignore
+├── 📄 package.json
+├── 📄 tsconfig.json                     # TS config + path mappings
+├── 📄 next.config.ts
+├── 📄 tailwind.config.ts
+├── 📄 postcss.config.mjs
+├── 📄 eslint.config.mjs
+└── 📄 README.md
+
+
+KEY FEATURES OF THIS STRUCTURE:
+
+✅ Feature-based Organization
+   - Components grouped by feature area, not by type
+   - Easier to find related code together
+
+✅ Barrel Exports
+   - Clean imports from feature directories
+   - Reduces relative path chaos
+
+✅ Centralized Configuration
+   - All constants, types, and config in dedicated directories
+   - Single source of truth for app-wide values
+
+✅ Scalable Library Utilities
+   - lib/ organized by feature (supabase, audio, utils, etc.)
+   - Easy to add new utilities without cluttering structure
+
+✅ PWA Ready
+   - Dedicated public/ directories for PWA assets
+   - Space for service workers and manifest
+
+✅ Test Ready
+   - tests/ directory mirrors src/ structure
+   - Easy to find tests alongside code
+
+✅ Documentation Ready
+   - docs/ directory for architecture and guides
+   - QUICK_REFERENCE.md for common tasks
+
+
+COMMON IMPORT PATTERNS:
+
+Components:     import { Button } from '@/components/ui';
+Types:          import type { AssessmentResult } from '@/types';
+Constants:      import { ROUTES, MESSAGES } from '@/constants';
+Config:         import { env } from '@/config';
+Utils:          import { soundManager } from '@/lib/audio';
+Hooks:          import { useSound } from '@/hooks';
+Context:        import { AssessmentContext } from '@/contexts';
