@@ -1,0 +1,23 @@
+{
+  "name": "@adhd/utils",
+  "version": "1.0.0",
+  "description": "ADHD Screening - Utility Functions",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./string": "./dist/string.js",
+    "./validation": "./dist/validation.js",
+    "./formatting": "./dist/formatting.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5"
+  }
+}

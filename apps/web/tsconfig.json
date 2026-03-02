@@ -1,0 +1,47 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "jsx": "react-jsx",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/app/*": ["./src/app/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/contexts/*": ["./src/contexts/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/public/*": ["./public/*"],
+      "@adhd/questionnaire": ["../../packages/questionnaire/src/index.ts"],
+      "@adhd/questionnaire/*": ["../../packages/questionnaire/src/*"],
+      "@adhd/scoring": ["../../packages/scoring/src/index.ts"],
+      "@adhd/scoring/*": ["../../packages/scoring/src/*"],
+      "@adhd/ui": ["../../packages/ui/src/index.ts"],
+      "@adhd/ui/*": ["../../packages/ui/src/*"],
+      "@adhd/utils": ["../../packages/utils/src/index.ts"],
+      "@adhd/utils/*": ["../../packages/utils/src/*"],
+      "@adhd/config": ["../../packages/config/src/index.ts"],
+      "@adhd/config/*": ["../../packages/config/src/*"],
+      "@adhd/constants": ["../../packages/constants/src/index.ts"],
+      "@adhd/constants/*": ["../../packages/constants/src/*"],
+      "@adhd/types": ["../../packages/types/src/index.ts"],
+      "@adhd/types/*": ["../../packages/types/src/*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": ["node_modules", "dist", ".next"]
+}

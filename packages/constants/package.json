@@ -1,0 +1,25 @@
+{
+  "name": "@adhd/constants",
+  "version": "1.0.0",
+  "description": "ADHD Screening - Application Constants",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./routes": "./dist/routes.js",
+    "./assessment": "./dist/assessment.js",
+    "./messages": "./dist/messages.js",
+    "./theme": "./dist/theme.js",
+    "./game": "./dist/game-config.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5"
+  }
+}

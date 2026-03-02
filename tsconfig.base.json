@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@adhd/types": ["packages/types/src/index.ts"],
+      "@adhd/types/*": ["packages/types/src/*"],
+      "@adhd/constants": ["packages/constants/src/index.ts"],
+      "@adhd/constants/*": ["packages/constants/src/*"],
+      "@adhd/config": ["packages/config/src/index.ts"],
+      "@adhd/config/*": ["packages/config/src/*"],
+      "@adhd/questionnaire": ["packages/questionnaire/src/index.ts"],
+      "@adhd/questionnaire/*": ["packages/questionnaire/src/*"],
+      "@adhd/scoring": ["packages/scoring/src/index.ts"],
+      "@adhd/scoring/*": ["packages/scoring/src/*"],
+      "@adhd/ui": ["packages/ui/src/index.ts"],
+      "@adhd/ui/*": ["packages/ui/src/*"],
+      "@adhd/utils": ["packages/utils/src/index.ts"],
+      "@adhd/utils/*": ["packages/utils/src/*"]
+    }
+  }
+}

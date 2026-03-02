@@ -1,0 +1,28 @@
+{
+  "name": "@adhd/questionnaire",
+  "version": "1.0.0",
+  "description": "ADHD Assessment Questionnaire - DSM-5 and ASRS instruments",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./dsm5": "./dist/instruments/dsm5/index.js",
+    "./asrs": "./dist/instruments/asrs/index.js",
+    "./context": "./dist/context/index.js",
+    "./followups": "./dist/followups/index.js",
+    "./types": "./dist/types.js"
+  },
+  "dependencies": {
+    "@adhd/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "@adhd/types",
+  "version": "1.0.0",
+  "description": "ADHD Screening - Shared Type Definitions",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./assessment": "./dist/assessment.js",
+    "./game": "./dist/game.js",
+    "./user": "./dist/user.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "name": "@adhd/ui",
+  "version": "1.0.0",
+  "description": "ADHD Screening - Reusable React UI Components",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./components": "./dist/components/index.js"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "dependencies": {
+    "@adhd/types": "workspace:*",
+    "@adhd/constants": "workspace:*",
+    "framer-motion": "^12.34.0",
+    "lucide-react": "^0.564.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5"
+  }
+}

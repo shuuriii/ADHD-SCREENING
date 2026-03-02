@@ -1,0 +1,27 @@
+{
+  "name": "@adhd/scoring",
+  "version": "1.0.0",
+  "description": "ADHD Assessment Scoring Algorithms",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./dsm5": "./dist/dsm5-scoring.js",
+    "./asrs": "./dist/asrs-scoring.js",
+    "./games": "./dist/game-scoring.js"
+  },
+  "dependencies": {
+    "@adhd/types": "workspace:*",
+    "@adhd/questionnaire": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5"
+  }
+}
