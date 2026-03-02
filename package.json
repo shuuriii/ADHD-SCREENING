@@ -1,33 +1,34 @@
 {
-  "name": "adhd-screening",
-  "version": "0.1.0",
+  "name": "adhd-screening-monorepo",
+  "version": "1.0.0",
   "private": true,
+  "description": "ADHD Screening Application - Monorepo",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "@react-pdf/renderer": "^4.3.2",
-    "@supabase/ssr": "^0.8.0",
-    "@supabase/supabase-js": "^2.95.3",
-    "framer-motion": "^12.34.0",
-    "howler": "^2.2.4",
-    "lucide-react": "^0.564.0",
-    "next": "16.1.6",
-    "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "dev": "cd apps/web && npm run dev",
+    "build": "npm run build --workspaces",
+    "build:web": "cd apps/web && npm run build",
+    "start": "cd apps/web && npm run start",
+    "lint": "npm run lint --workspaces",
+    "type-check": "npm run type-check --workspaces",
+    "clean": "npm run clean --workspaces && rm -rf node_modules",
+    "setup": "npm install && npm run build"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/howler": "^2.2.12",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6",
-    "tailwindcss": "^4",
+    "prettier": "^3.0.0",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   }
 }
