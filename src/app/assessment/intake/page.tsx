@@ -108,50 +108,6 @@ export default function IntakePage() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-0.5">
-              Pick your profile picture
-            </label>
-            <p className="text-xs text-muted mb-3">
-              This shows as your avatar throughout the app.
-            </p>
-            <div className="grid grid-cols-4 gap-3">
-              {(
-                [
-                  { id: "fox",   emoji: "🦊", label: "Fox"   },
-                  { id: "panda", emoji: "🐼", label: "Panda" },
-                  { id: "frog",  emoji: "🐸", label: "Frog"  },
-                  { id: "bunny", emoji: "🐰", label: "Bunny" },
-                ] as { id: PetPreference; emoji: string; label: string }[]
-              ).map((avatar) => (
-                <button
-                  key={avatar.id}
-                  type="button"
-                  onClick={() => setPetPreference(avatar.id)}
-                  className={`relative flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all ${
-                    petPreference === avatar.id
-                      ? "border-primary-500 bg-primary-50 ring-1 ring-primary-500"
-                      : "border-border bg-white hover:border-primary-300"
-                  }`}
-                >
-                  {/* Placeholder — swap for <Image> when artwork is ready */}
-                  {/* Image path: /images/avatars/{avatar.id}.png */}
-                  <div className="w-14 h-14 rounded-full bg-primary-50 border border-border/60 flex items-center justify-center text-3xl shadow-sm">
-                    {avatar.emoji}
-                  </div>
-                  <span className="text-xs font-medium text-muted">
-                    {avatar.label}
-                  </span>
-                  {petPreference === avatar.id && (
-                    <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-primary-500 flex items-center justify-center text-white text-[9px]">
-                      ✓
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
             <label
               htmlFor="name"
               className="block text-sm font-medium text-foreground mb-1.5"

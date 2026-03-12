@@ -26,7 +26,12 @@ export async function GET(request: Request) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      // Clear any previous OTP verification — force re-verify on each login
+      cookieStore.delete("otp_verified");
+      // Redirect to OTP verification, preserving the final destination
+      const verifyUrl = new URL("/auth/verify-otp", origin);
+      verifyUrl.searchParams.set("next", next);
+      return NextResponse.redirect(verifyUrl.toString());
     }
   }
 
