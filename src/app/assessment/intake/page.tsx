@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useAssessment } from "@/contexts/AssessmentContext";
@@ -11,6 +11,7 @@ import type { Gender, PetPreference } from "@/questionnaire/types";
 import { saveSession } from "@/lib/supabase/sessions";
 import { createClient, supabaseConfigured } from "@/lib/supabase/client";
 import { initBundle } from "@/lib/report-bundle";
+import type { User } from "@supabase/supabase-js";
 
 export default function IntakePage() {
   const router = useRouter();
@@ -21,6 +22,17 @@ export default function IntakePage() {
   const [email, setEmail] = useState("");
   const [petPreference, setPetPreference] = useState<PetPreference | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    if (!supabaseConfigured) return;
+    createClient().auth.getUser().then(({ data }) => {
+      const u = data.user ?? null;
+      setUser(u);
+      if (u?.email) setEmail(u.email);
+      if (u?.user_metadata?.full_name) setName(u.user_metadata.full_name);
+    });
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,10 +100,12 @@ export default function IntakePage() {
         transition={{ duration: 0.5 }}
       >
         <h1 className="text-3xl font-bold text-foreground mb-2">
-          Before we begin
+          {user ? `Welcome, ${user.user_metadata?.full_name?.split(" ")[0] ?? "there"}!` : "Before we begin"}
         </h1>
         <p className="text-muted mb-8">
-          A few quick details to personalize your screening experience.
+          {user
+            ? "Just a few more details to personalize your screening."
+            : "A few quick details to personalize your screening experience."}
         </p>
       </motion.div>
 
@@ -185,25 +199,27 @@ export default function IntakePage() {
             />
           </div>
 
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-foreground mb-1.5"
-            >
-              Email
-            </label>
-            <div className="relative">
-              <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted/50 pointer-events-none" />
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@gmail.com"
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-white text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow"
-              />
+          {!user && (
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-foreground mb-1.5"
+              >
+                Email
+              </label>
+              <div className="relative">
+                <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted/50 pointer-events-none" />
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@gmail.com"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-white text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <Button type="submit" className="w-full" size="lg">
             Continue to Assessment
