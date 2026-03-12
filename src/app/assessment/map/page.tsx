@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useAssessment } from "@/contexts/AssessmentContext";
-import type { InstrumentType } from "@/questionnaire/types";
 import { FileText, CheckCircle2, ChevronRight } from "lucide-react";
 import { getBundle, type ReportBundle } from "@/lib/report-bundle";
 
@@ -21,7 +20,7 @@ interface MapNode {
   desc: string;
   time: string;
   type: NodeType;
-  instrument?: InstrumentType;
+  instrument?: string;
   href: string;
   color: string;
   rotate: string;
@@ -44,21 +43,6 @@ const NODES: MapNode[] = [
     rotate: "-2deg",
     offsetY: "0px",
     bundleKey: "dsm5",
-  },
-  {
-    id: "asrs",
-    emoji: "⚡",
-    category: "Questionnaire",
-    title: "ASRS Quick Screen",
-    desc: "18 questions — the WHO-validated short screener",
-    time: "~10 min",
-    type: "questionnaire",
-    instrument: "asrs",
-    href: "/assessment/questionnaire",
-    color: "#d97706",
-    rotate: "1.5deg",
-    offsetY: "32px",
-    bundleKey: "asrs",
   },
   {
     id: "gonogo",
@@ -102,19 +86,6 @@ const NODES: MapNode[] = [
     offsetY: "0px",
     bundleKey: "focusQuest",
   },
-  {
-    id: "coming1",
-    emoji: "🔒",
-    category: "Coming Soon",
-    title: "Working Memory",
-    desc: "A new task measuring short-term memory and distraction resistance.",
-    time: "TBA",
-    type: "locked",
-    href: "#",
-    color: "#9ca3af",
-    rotate: "1deg",
-    offsetY: "32px",
-  },
 ];
 
 /* ── Completion helpers ───────────────────────────────────────────── */
@@ -130,7 +101,7 @@ function isNodeComplete(node: MapNode, bundle: ReportBundle | null): boolean {
 
 function suggestNextNode(bundle: ReportBundle | null): MapNode | null {
   if (!bundle) return null;
-  const ordered = ["dsm5", "asrs", "gonogo", "chronos", "focus-quest"]
+  const ordered = ["dsm5", "gonogo", "chronos", "focus-quest"]
     .map(id => NODES.find(n => n.id === id)!);
   // If no questionnaire done, suggest the first questionnaire
   if (!bundle.questionnaire) return ordered[0];
@@ -274,7 +245,7 @@ export default function AssessmentMapPage() {
 
   const handleSelect = (node: MapNode) => {
     if (node.instrument) {
-      dispatch({ type: "SET_INSTRUMENT", payload: node.instrument });
+      dispatch({ type: "SET_INSTRUMENT", payload: node.instrument as "dsm5" });
     }
     router.push(node.href);
   };
@@ -300,7 +271,7 @@ export default function AssessmentMapPage() {
           </p>
           {completedCount > 0 && (
             <p className="mt-2 text-xs font-medium text-[#46a83c]">
-              {completedCount} of 5 sections complete
+              {completedCount} of 4 sections complete
             </p>
           )}
         </motion.div>
@@ -355,7 +326,7 @@ export default function AssessmentMapPage() {
           <p className="text-[10px] font-bold tracking-widest uppercase text-[#8B5A2B]/60 mb-3">
             📜 Questionnaires
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+          <div className="grid grid-cols-1 gap-3 mb-6">
             {NODES.filter(n => n.type === "questionnaire").map((node, i) => (
               <NodeCard
                 key={node.id}

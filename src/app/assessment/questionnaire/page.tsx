@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { useAssessment } from "@/contexts/AssessmentContext";
 import { dsm5Questions } from "@/questionnaire/dsm5-questions";
-import { asrsQuestions } from "@/questionnaire/asrs-questions";
 import { contextQuestions } from "@/questionnaire/context-questions";
 import type { LikertValue } from "@/questionnaire/types";
 import LikertScale from "@/components/assessment/LikertScale";
@@ -25,26 +24,20 @@ export default function QuestionnairePage() {
     state,
     dispatch,
     calculateAndSetResults,
-    calculateAndSetASRSResults,
     computeFollowUps,
   } = useAssessment();
   const {
     currentPhase,
     currentQuestionIndex,
-    instrument,
     responses,
     contextResponses,
     followUpResponses,
     followUpQuestions,
   } = state;
 
-  const questions = useMemo(
-    () => (instrument === "asrs" ? asrsQuestions : dsm5Questions),
-    [instrument]
-  );
+  const questions = dsm5Questions;
   const TOTAL_MAIN = questions.length;
-  const MILESTONE_INDEX =
-    instrument === "asrs" ? 5 : 14; // Part A ends at Q6 (index 5), Domain A at Q15 (index 14)
+  const MILESTONE_INDEX = 14; // Domain A at Q15 (index 14)
 
   const [showPhaseTransition, setShowPhaseTransition] = useState(false);
   const [phaseTransitionData, setPhaseTransitionData] = useState({
@@ -130,13 +123,9 @@ export default function QuestionnairePage() {
   );
 
   const finishAssessment = useCallback(() => {
-    if (instrument === "asrs") {
-      calculateAndSetASRSResults();
-    } else {
-      calculateAndSetResults();
-    }
+    calculateAndSetResults();
     router.push("/assessment/results");
-  }, [instrument, calculateAndSetASRSResults, calculateAndSetResults, router]);
+  }, [calculateAndSetResults, router]);
 
   // If we enter followups phase but there are no questions, finish the assessment
   const finishedRef = useRef(false);
@@ -203,12 +192,6 @@ export default function QuestionnairePage() {
   const getPhaseLabel = () => {
     switch (currentPhase) {
       case "main": {
-        if (instrument === "asrs") {
-          const q = asrsQuestions[currentQuestionIndex];
-          return q?.part === "A"
-            ? "Part A — Quick Screener"
-            : "Part B — Full Screener";
-        }
         const q = dsm5Questions[currentQuestionIndex];
         return q?.domain === "A"
           ? "Domain A — Inattention"

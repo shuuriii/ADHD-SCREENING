@@ -22,13 +22,6 @@ import {
   interpretDSM5Results,
   determineFollowUps,
 } from "@/questionnaire/scoring";
-import { asrsQuestions } from "@/questionnaire/asrs-questions";
-import {
-  calculateASRSScores,
-  determineASRSPresentation,
-  interpretASRSResults,
-  evaluateASRSCriteria,
-} from "@/questionnaire/asrs-scoring";
 
 type Phase = "intake" | "main" | "context" | "followups" | "results";
 
@@ -57,7 +50,6 @@ type Action =
   | { type: "SET_QUESTION_INDEX"; payload: number }
   | { type: "SET_FOLLOWUPS"; payload: FollowUpQuestion[] }
   | { type: "SET_RESULTS"; payload: AssessmentResult }
-  | { type: "SET_ASRS_RESULTS"; payload: ASRSResult }
   | { type: "RESET" }
   | { type: "HYDRATE"; payload: AssessmentState };
 
@@ -119,8 +111,6 @@ function reducer(state: AssessmentState, action: Action): AssessmentState {
       return { ...state, followUpQuestions: action.payload };
     case "SET_RESULTS":
       return { ...state, results: action.payload, currentPhase: "results" };
-    case "SET_ASRS_RESULTS":
-      return { ...state, asrsResult: action.payload, currentPhase: "results" };
     case "RESET":
       return initialState;
     case "HYDRATE":
@@ -134,7 +124,6 @@ interface AssessmentContextValue {
   state: AssessmentState;
   dispatch: React.Dispatch<Action>;
   calculateAndSetResults: () => void;
-  calculateAndSetASRSResults: () => void;
   computeFollowUps: () => void;
 }
 
@@ -210,47 +199,9 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
     saveToHistory(result);
   };
 
-  const calculateAndSetASRSResults = () => {
-    const asrsScores = calculateASRSScores(state.responses, asrsQuestions);
-    const presentationType = determineASRSPresentation(asrsScores.partAHighRisk);
-    const criteria = evaluateASRSCriteria(asrsScores.partAHighRisk, state.contextResponses);
-    const interpretation = interpretASRSResults(
-      asrsScores,
-      presentationType,
-      state.contextResponses,
-      state.userData.gender,
-      state.followUpResponses
-    );
-
-    const result: ASRSResult = {
-      assessmentId: crypto.randomUUID(),
-      instrument: "asrs",
-      userData: state.userData,
-      domainA: asrsScores.inattention,
-      domainB: asrsScores.hyperactivity,
-      presentationType,
-      dsm5Criteria: criteria,
-      interpretation,
-      partAShadedCount: asrsScores.partAShadedCount,
-      partAHighRisk: asrsScores.partAHighRisk,
-      responses: state.responses,
-      contextResponses: state.contextResponses,
-      followUpResponses: state.followUpResponses,
-      completedAt: new Date().toISOString(),
-    };
-
-    dispatch({ type: "SET_ASRS_RESULTS", payload: result });
-    // Persist synchronously so sessionStorage is up-to-date before router.push
-    try {
-      const next = { ...state, asrsResult: result, currentPhase: "results" as const };
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(next));
-    } catch { /* noop */ }
-    saveToHistory(result);
-  };
-
   return (
     <AssessmentContext.Provider
-      value={{ state, dispatch, calculateAndSetResults, calculateAndSetASRSResults, computeFollowUps }}
+      value={{ state, dispatch, calculateAndSetResults, computeFollowUps }}
     >
       {children}
     </AssessmentContext.Provider>

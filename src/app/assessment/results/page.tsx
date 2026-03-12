@@ -8,7 +8,6 @@ import { useAssessment } from "@/contexts/AssessmentContext";
 import ScoreSummary from "@/components/results/ScoreSummary";
 import PresentationTypeCard from "@/components/results/PresentationType";
 import DSM5CriteriaCard from "@/components/results/DSM5Criteria";
-import ASRSPartACard from "@/components/results/ASRSPartACard";
 import GenderInsights from "@/components/results/GenderInsights";
 import Recommendations from "@/components/results/Recommendations";
 import FocusTaskCard from "@/components/results/FocusTaskCard";
@@ -18,7 +17,7 @@ import { RotateCcw, Download, Target } from "lucide-react";
 import { saveQuestionnaireResult } from "@/lib/supabase/questionnaire-results";
 import { createClient, supabaseConfigured } from "@/lib/supabase/client";
 import { saveQuestionnaireToBundle } from "@/lib/report-bundle";
-import type { AssessmentResult, ASRSResult } from "@/questionnaire/types";
+import type { AssessmentResult } from "@/questionnaire/types";
 
 const PDFDownloadButton = dynamic(
   () => import("@/components/report/PDFDownloadButton"),
@@ -33,29 +32,15 @@ const PDFDownloadButton = dynamic(
   }
 );
 
-const ASRSPDFDownloadButton = dynamic(
-  () => import("@/components/report/ASRSPDFDownloadButton"),
-  {
-    ssr: false,
-    loading: () => (
-      <Button disabled>
-        <Download size={16} className="mr-2" />
-        Preparing PDF...
-      </Button>
-    ),
-  }
-);
-
 /** Try to recover results from sessionStorage if context is empty */
-function recoverResult(): { instrument: "dsm5" | "asrs"; result: AssessmentResult | ASRSResult; userData: AssessmentResult["userData"] } | null {
+function recoverResult(): { result: AssessmentResult; userData: AssessmentResult["userData"] } | null {
   try {
     const raw = sessionStorage.getItem("adhd-assessment-v2");
     if (!raw) return null;
     const s = JSON.parse(raw);
-    const inst = s.instrument as "dsm5" | "asrs";
-    const result = inst === "asrs" ? s.asrsResult : s.results;
+    const result = s.results;
     if (!result) return null;
-    return { instrument: inst, result, userData: s.userData };
+    return { result, userData: s.userData };
   } catch {
     return null;
   }
@@ -64,11 +49,10 @@ function recoverResult(): { instrument: "dsm5" | "asrs"; result: AssessmentResul
 export default function ResultsPage() {
   const router = useRouter();
   const { state, dispatch } = useAssessment();
-  const { instrument, results, asrsResult, userData } = state;
+  const { results, userData } = state;
   const savedRef = useRef(false);
 
-  // Primary: context state. Fallback: sessionStorage.
-  const contextResult = instrument === "asrs" ? asrsResult : results;
+  const contextResult = results;
   const [fallback, setFallback] = useState<ReturnType<typeof recoverResult>>(null);
 
   useEffect(() => {
@@ -85,14 +69,13 @@ export default function ResultsPage() {
   }, [contextResult, router]);
 
   const activeResult = contextResult ?? fallback?.result ?? null;
-  const activeInstrument = contextResult ? instrument : (fallback?.instrument ?? instrument);
   const activeUserData = contextResult ? userData : (fallback?.userData ?? userData);
 
   useEffect(() => {
     if (!activeResult || savedRef.current) return;
     savedRef.current = true;
     // Save to unified report bundle (local)
-    saveQuestionnaireToBundle(activeInstrument, activeResult);
+    saveQuestionnaireToBundle("dsm5", activeResult);
     // Save questionnaire result to Supabase once on mount (fire-and-forget)
     const sessionId = localStorage.getItem("fayth-session-id");
     if (sessionId && supabaseConfigured) {
@@ -120,7 +103,7 @@ export default function ResultsPage() {
           Your Results
         </h1>
         <p className="text-xs text-muted mb-1">
-          {activeInstrument === "asrs" ? "ASRS v1.1 Screener" : "DSM-5 Assessment"}
+          DSM-5 Assessment
         </p>
         {activeUserData.name && activeUserData.name !== "Anonymous" && (
           <p className="text-muted mb-2">
@@ -141,14 +124,12 @@ export default function ResultsPage() {
         <PresentationTypeCard result={activeResult.presentationType} />
       )}
 
-      {activeInstrument === "asrs" ? (
-        <ASRSPartACard result={activeResult as ASRSResult} />
-      ) : activeResult.dsm5Criteria && activeResult.interpretation ? (
+      {activeResult.dsm5Criteria && activeResult.interpretation && (
         <DSM5CriteriaCard
           criteria={(activeResult as AssessmentResult).dsm5Criteria}
           clinicalNote={(activeResult as AssessmentResult).interpretation.clinicalNote}
         />
-      ) : null}
+      )}
 
       <GenderInsights insights={activeResult.interpretation?.genderInsights ?? []} />
       <Recommendations items={activeResult.interpretation?.recommendations ?? []} />
@@ -186,12 +167,7 @@ export default function ResultsPage() {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.7 }}
       >
-        {activeInstrument === "dsm5" && (
-          <PDFDownloadButton results={activeResult as AssessmentResult} />
-        )}
-        {activeInstrument === "asrs" && (
-          <ASRSPDFDownloadButton results={activeResult as ASRSResult} />
-        )}
+        <PDFDownloadButton results={activeResult as AssessmentResult} />
         <Button variant="secondary" onClick={handleStartNew}>
           <RotateCcw size={16} className="mr-2" />
           Start New Assessment
