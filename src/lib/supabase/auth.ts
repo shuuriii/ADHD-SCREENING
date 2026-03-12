@@ -17,8 +17,8 @@ export async function signInWithGoogle(redirectTo?: string) {
 export async function signOut() {
   const supabase = createClient();
   await supabase.auth.signOut();
-  // Clear OTP verification cookie
-  document.cookie = "otp_verified=; path=/; max-age=0";
+  // Clear httpOnly OTP cookies via server-side route
+  await fetch("/api/auth/signout", { method: "POST" });
   window.location.href = "/";
 }
 

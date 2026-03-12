@@ -11,26 +11,37 @@ import DSM5CriteriaCard from "@/components/results/DSM5Criteria";
 import GenderInsights from "@/components/results/GenderInsights";
 import Recommendations from "@/components/results/Recommendations";
 import FocusTaskCard from "@/components/results/FocusTaskCard";
+import ChronosTaskCard from "@/components/results/ChronosTaskCard";
+import FocusQuestCard from "@/components/results/FocusQuestCard";
+import PDFDownloadButton from "@/components/report/PDFDownloadButton";
 import Button from "@/components/ui/Button";
-import Link from "next/link";
-import { RotateCcw, Download, Target } from "lucide-react";
+import { RotateCcw, Gamepad2 } from "lucide-react";
 import { saveQuestionnaireResult } from "@/lib/supabase/questionnaire-results";
 import { createClient, supabaseConfigured } from "@/lib/supabase/client";
 import { saveQuestionnaireToBundle } from "@/lib/report-bundle";
 import type { AssessmentResult } from "@/questionnaire/types";
 
-const PDFDownloadButton = dynamic(
-  () => import("@/components/report/PDFDownloadButton"),
-  {
-    ssr: false,
-    loading: () => (
-      <Button disabled>
-        <Download size={16} className="mr-2" />
-        Preparing PDF...
-      </Button>
-    ),
-  }
+const PresentationPieChart = dynamic(
+  () => import("@/components/results/charts/PresentationPieChart"),
+  { ssr: false }
 );
+
+const DomainComparisonChart = dynamic(
+  () => import("@/components/results/charts/DomainComparisonChart"),
+  { ssr: false }
+);
+
+const DSM5FlagsChart = dynamic(
+  () => import("@/components/results/charts/DSM5FlagsChart"),
+  { ssr: false }
+);
+
+const GENDER_LABELS: Record<string, string> = {
+  female: "Female",
+  male: "Male",
+  "non-binary": "Non-binary",
+  "prefer-not-to-say": "Prefer not to say",
+};
 
 /** Try to recover results from sessionStorage if context is empty */
 function recoverResult(): { result: AssessmentResult; userData: AssessmentResult["userData"] } | null {
@@ -51,6 +62,7 @@ export default function ResultsPage() {
   const { state, dispatch } = useAssessment();
   const { results, userData } = state;
   const savedRef = useRef(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const contextResult = results;
   const [fallback, setFallback] = useState<ReturnType<typeof recoverResult>>(null);
@@ -93,33 +105,75 @@ export default function ResultsPage() {
     router.push("/assessment/intake");
   };
 
+  const displayName =
+    activeUserData.name && activeUserData.name !== "Anonymous"
+      ? activeUserData.name
+      : null;
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
+      <div ref={contentRef}>
+      {/* ── Greeting & User Info ── */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h1 className="text-3xl font-bold text-foreground mb-1">
-          Your Results
-        </h1>
-        <p className="text-xs text-muted mb-1">
-          DSM-5 Assessment
-        </p>
-        {activeUserData.name && activeUserData.name !== "Anonymous" && (
-          <p className="text-muted mb-2">
-            {activeUserData.name}, age {activeUserData.age}
-          </p>
+        {displayName ? (
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            Hi {displayName}, here are your results
+          </h1>
+        ) : (
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            Your Results
+          </h1>
         )}
-        {activeResult.completedAt && (
-          <p className="text-xs text-muted mb-8">
-            Completed {new Date(activeResult.completedAt).toLocaleDateString()}
-          </p>
-        )}
+
+        <div className="flex flex-wrap items-center gap-3 text-sm text-muted mb-1">
+          {displayName && <span className="font-medium text-foreground">{displayName}</span>}
+          {activeUserData.age && (
+            <span>Age {activeUserData.age}</span>
+          )}
+          {activeUserData.gender && (
+            <span>{GENDER_LABELS[activeUserData.gender] ?? activeUserData.gender}</span>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 text-xs text-muted mb-8">
+          <span>DSM-5 Assessment</span>
+          {activeResult.completedAt && (
+            <span>
+              Completed {new Date(activeResult.completedAt).toLocaleDateString()}
+            </span>
+          )}
+        </div>
       </motion.div>
 
+      {/* ── Score Summary (existing bars) ── */}
       {activeResult.domainA && activeResult.domainB && (
         <ScoreSummary domainA={activeResult.domainA} domainB={activeResult.domainB} />
       )}
+
+      {/* ── Charts ── */}
+      {activeResult.presentationType && activeResult.domainA && activeResult.domainB && (
+        <PresentationPieChart
+          presentationType={activeResult.presentationType}
+          domainAPercentage={activeResult.domainA.percentage}
+          domainBPercentage={activeResult.domainB.percentage}
+        />
+      )}
+
+      {activeResult.domainA && activeResult.domainB && (
+        <DomainComparisonChart
+          domainA={activeResult.domainA}
+          domainB={activeResult.domainB}
+        />
+      )}
+
+      {activeResult.dsm5Criteria && (
+        <DSM5FlagsChart criteria={activeResult.dsm5Criteria} />
+      )}
+
+      {/* ── Existing result cards ── */}
       {activeResult.presentationType && (
         <PresentationTypeCard result={activeResult.presentationType} />
       )}
@@ -135,44 +189,44 @@ export default function ResultsPage() {
       <Recommendations items={activeResult.interpretation?.recommendations ?? []} />
 
       <FocusTaskCard />
+      <ChronosTaskCard />
+      <FocusQuestCard />
 
-      <motion.div
-        className="bg-white rounded-2xl shadow-sm border border-border/50 p-5 mb-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-      >
-        <div className="flex items-start gap-3">
-          <Target size={20} className="text-primary-600 mt-0.5 shrink-0" />
-          <div>
-            <h3 className="font-semibold text-foreground mb-1">
-              Want an additional cognitive measure?
+      </div>{/* end contentRef */}
+
+      {/* ── Start Gamified Assessments CTA ── */}
+      <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl shadow-sm border border-purple-200/60 p-6 mb-6">
+        <div className="flex items-start gap-4">
+          <div className="p-3 bg-white rounded-xl shadow-sm">
+            <Gamepad2 size={24} className="text-purple-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-foreground text-lg mb-1">
+              Ready for the fun part?
             </h3>
-            <p className="text-sm text-muted mb-3">
-              Try the Go/No-Go attention task — 15 minutes, no account needed.
-              It measures visual attention and impulse control with objective behavioral data.
+            <p className="text-sm text-muted mb-4">
+              Complete 3 short gamified cognitive tasks to get deeper insight into
+              attention, impulse control, and time perception. Takes about 15 minutes total.
             </p>
-            <Link href="/assessment/focus-task">
-              <Button variant="secondary" size="sm">
-                Start Focus Task
-              </Button>
-            </Link>
+            <a
+              href="/assessment/chronos-task"
+              className="inline-flex items-center justify-center rounded-xl font-medium px-6 py-3 text-base min-h-[44px] bg-[#fbbf24] text-foreground border-2 border-foreground shadow-[3px_3px_0_#1a2410] hover:shadow-[4px_4px_0_#1a2410] hover:-translate-x-px hover:-translate-y-px active:shadow-[1px_1px_0_#1a2410] active:translate-x-0.5 active:translate-y-0.5 transition-all duration-150"
+            >
+                <Gamepad2 size={16} className="mr-2" />
+                Start Gamified Assessments
+            </a>
           </div>
         </div>
-      </motion.div>
+      </div>
 
-      <motion.div
-        className="flex flex-col sm:flex-row gap-3 mt-8"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.7 }}
-      >
-        <PDFDownloadButton results={activeResult as AssessmentResult} />
+      {/* ── Bottom actions ── */}
+      <div className="flex flex-col sm:flex-row gap-3 mt-8">
+        <PDFDownloadButton targetRef={contentRef} />
         <Button variant="secondary" onClick={handleStartNew}>
           <RotateCcw size={16} className="mr-2" />
           Start New Assessment
         </Button>
-      </motion.div>
+      </div>
     </div>
   );
 }

@@ -9,6 +9,7 @@ const PUBLIC_PATHS = [
   "/auth/verify-otp",
   "/api/otp/send",
   "/api/otp/verify",
+  "/api/auth/signout",
 ];
 
 export async function middleware(request: NextRequest) {

@@ -6,7 +6,9 @@ export async function saveSession(
   petPreference: string | null,
   instrument: string,
   sessionId: string,
-  userId?: string | null
+  userId?: string | null,
+  name?: string | null,
+  email?: string | null
 ): Promise<void> {
   if (!supabaseConfigured) return;
   const supabase = createClient();
@@ -18,6 +20,8 @@ export async function saveSession(
       gender,
       pet_preference: petPreference,
       instrument,
+      name: name ?? null,
+      email: email ?? null,
     },
     { onConflict: "session_id" }
   );

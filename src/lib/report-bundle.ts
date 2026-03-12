@@ -1,4 +1,7 @@
 import type { AssessmentResult, ASRSResult, UserData } from "@/questionnaire/types";
+import type { GoNoGoScores } from "@/lib/gonogo-scoring";
+import type { ChronosScores } from "@/lib/chronos-scoring";
+import type { FocusQuestScores } from "@/lib/focus-quest-scoring";
 
 export interface ReportBundle {
   sessionId: string;
@@ -11,9 +14,9 @@ export interface ReportBundle {
     completedAt: string;
   };
   games: {
-    gonogo?: { scores: unknown; completedAt: string };
-    chronos?: { scores: unknown; completedAt: string };
-    focusQuest?: { scores: unknown; completedAt: string };
+    gonogo?: { scores: GoNoGoScores; completedAt: string };
+    chronos?: { scores: ChronosScores; completedAt: string };
+    focusQuest?: { scores: FocusQuestScores; completedAt: string };
   };
 }
 
@@ -69,13 +72,17 @@ export function saveQuestionnaireToBundle(
 }
 
 /** Called on each game completion. Merges game scores into the bundle. */
+export function saveGameToBundle(game: "gonogo", scores: GoNoGoScores): void;
+export function saveGameToBundle(game: "chronos", scores: ChronosScores): void;
+export function saveGameToBundle(game: "focusQuest", scores: FocusQuestScores): void;
 export function saveGameToBundle(
   game: "gonogo" | "chronos" | "focusQuest",
-  scores: unknown
+  scores: GoNoGoScores | ChronosScores | FocusQuestScores
 ): void {
   const bundle = readBundle();
   if (!bundle) return;
-  bundle.games[game] = { scores, completedAt: new Date().toISOString() };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (bundle.games as any)[game] = { scores, completedAt: new Date().toISOString() };
   writeBundle(bundle);
 }
 

@@ -1,21 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { getBundle, type ReportBundle } from "@/lib/report-bundle";
 import { ArrowLeft, CheckCircle2, Circle } from "lucide-react";
-
-const CombinedPDFDownloadButton = dynamic(
-  () => import("@/components/report/CombinedPDFDownloadButton"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-10 w-56 bg-border/30 rounded-xl animate-pulse" />
-    ),
-  }
-);
+import CombinedPDFDownloadButton from "@/components/report/CombinedPDFDownloadButton";
 
 const AVATAR_EMOJI: Record<string, string> = {
   fox: "🦊", panda: "🐼", frog: "🐸", bunny: "🐰",
@@ -30,6 +20,7 @@ const CHECKLIST = [
 
 export default function MyReportPage() {
   const [bundle, setBundle] = useState<ReportBundle | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setBundle(getBundle());
@@ -60,12 +51,13 @@ export default function MyReportPage() {
 
   return (
     <div className="max-w-xl mx-auto px-4 py-12">
+      <div ref={contentRef}>
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
 
         {/* Back */}
-        <Link href="/assessment/map" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors mb-8">
+        <Link href="/assessment/intake" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors mb-8">
           <ArrowLeft size={14} />
-          Back to map
+          Back to intake
         </Link>
 
         {/* Heading */}
@@ -103,9 +95,12 @@ export default function MyReportPage() {
           })}
         </div>
 
+      </motion.div>
+      </div>{/* end contentRef */}
+
         {/* Download */}
-        <div className="flex flex-col items-center gap-3">
-          <CombinedPDFDownloadButton />
+        <div className="flex flex-col items-center gap-3" data-html2pdf-ignore>
+          <CombinedPDFDownloadButton targetRef={contentRef} />
           {completedCount < 4 && (
             <p className="text-xs text-muted/60 text-center">
               Complete more tasks to add cognitive data to your report.
@@ -114,7 +109,6 @@ export default function MyReportPage() {
           )}
         </div>
 
-      </motion.div>
     </div>
   );
 }

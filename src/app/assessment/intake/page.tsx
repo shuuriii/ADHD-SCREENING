@@ -89,12 +89,15 @@ export default function IntakePage() {
           petPreference,
           "dsm5",
           sessionId,
-          data.user?.id ?? null
+          data.user?.id ?? null,
+          resolvedName,
+          email.trim() || null
         );
       });
     }
 
-    router.push("/assessment/map");
+    dispatch({ type: "SET_INSTRUMENT", payload: "dsm5" });
+    router.push("/assessment/questionnaire");
   };
 
   return (
