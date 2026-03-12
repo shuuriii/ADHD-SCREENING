@@ -26,12 +26,17 @@ export default function IntakePage() {
 
   useEffect(() => {
     if (!supabaseConfigured) return;
-    createClient().auth.getUser().then(({ data }) => {
-      const u = data.user ?? null;
-      setUser(u);
-      if (u?.email) setEmail(u.email);
-      if (u?.user_metadata?.full_name) setName(u.user_metadata.full_name);
-    });
+    createClient()
+      .auth.getUser()
+      .then(({ data }) => {
+        const u = data.user ?? null;
+        setUser(u);
+        if (u?.email) setEmail(u.email);
+        if (u?.user_metadata?.full_name) setName(u.user_metadata.full_name);
+      })
+      .catch(() => {
+        // Auth not available — continue as anonymous
+      });
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
