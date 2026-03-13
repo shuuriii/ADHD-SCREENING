@@ -208,7 +208,7 @@ export default function ResultsPage() {
               attention, impulse control, and time perception. Takes about 15 minutes total.
             </p>
             <a
-              href="/assessment/focus-task"
+              href="/assessment/chronos-task"
               className="inline-flex items-center justify-center rounded-xl font-medium px-6 py-3 text-base min-h-[44px] bg-[#fbbf24] text-foreground border-2 border-foreground shadow-[3px_3px_0_#1a2410] hover:shadow-[4px_4px_0_#1a2410] hover:-translate-x-px hover:-translate-y-px active:shadow-[1px_1px_0_#1a2410] active:translate-x-0.5 active:translate-y-0.5 transition-all duration-150"
             >
                 <Gamepad2 size={16} className="mr-2" />

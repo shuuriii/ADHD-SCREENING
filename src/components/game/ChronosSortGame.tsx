@@ -11,6 +11,8 @@ import { safeParse, chronosHistorySchema } from "@/lib/schemas";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import GamePauseOverlay from "./GamePauseOverlay";
+import { usePremium } from "@/lib/premium";
+import { Lock, Crown } from "lucide-react";
 
 const CFG = {
   PRACTICE: 8,
@@ -79,6 +81,7 @@ function saveHistory(scores: ChronosScores) {
 
 export default function ChronosSortGame({ onComplete }: Props) {
   const router = useRouter();
+  const [premium, setUserPremium] = usePremium();
   const [screen, setScreen] = useState<Screen>("welcome");
   const [isPaused, setIsPaused] = useState(false);
   const [heldItem, setHeldItem] = useState<HeldItem | null>(null);
@@ -796,6 +799,62 @@ export default function ChronosSortGame({ onComplete }: Props) {
             These scores are for screening only — not a diagnosis.
           </div>
 
+          {/* Other cognitive tasks */}
+          <div className="w-full max-w-[420px] mb-5">
+            <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#8b93b0] mb-3 text-left">
+              Other cognitive tasks
+            </p>
+            <div className="flex gap-3">
+              {/* Go/No-Go — locked */}
+              <div className="flex-1 relative rounded-xl border border-[#252a38] bg-[#1b1f2b] p-4 text-center overflow-hidden">
+                <div className="absolute inset-0 backdrop-blur-[2px] bg-[rgba(13,15,20,0.7)] z-10 flex flex-col items-center justify-center gap-1.5">
+                  <Lock size={20} className="text-[#a78bfa]" />
+                  <span className="font-mono text-[10px] text-[#a78bfa] uppercase tracking-wider">Premium</span>
+                </div>
+                <div className="opacity-40">
+                  <div className="text-2xl mb-2">🎯</div>
+                  <div className="text-[13px] font-bold text-[#f5c842]">Go/No-Go</div>
+                  <div className="font-mono text-[9px] text-[#8b93b0] mt-1">Impulse Control</div>
+                </div>
+              </div>
+              {/* Focus Quest — locked */}
+              <div className="flex-1 relative rounded-xl border border-[#252a38] bg-[#1b1f2b] p-4 text-center overflow-hidden">
+                <div className="absolute inset-0 backdrop-blur-[2px] bg-[rgba(13,15,20,0.7)] z-10 flex flex-col items-center justify-center gap-1.5">
+                  <Lock size={20} className="text-[#a78bfa]" />
+                  <span className="font-mono text-[10px] text-[#a78bfa] uppercase tracking-wider">Premium</span>
+                </div>
+                <div className="opacity-40">
+                  <div className="text-2xl mb-2">🧩</div>
+                  <div className="text-[13px] font-bold text-[#38bdf8]">Focus Quest</div>
+                  <div className="font-mono text-[9px] text-[#8b93b0] mt-1">Sustained Attention</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Go Premium banner */}
+          {!premium && (
+            <div className="w-full max-w-[420px] mb-5 p-5 rounded-xl border border-[#a78bfa33] bg-gradient-to-br from-[#1b1f2b] to-[#1a1530]">
+              <div className="flex items-start gap-3">
+                <Crown size={22} className="text-[#a78bfa] shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="text-[14px] font-bold text-[#dde3f0] mb-1">
+                    Unlock the Full Cognitive Battery
+                  </h3>
+                  <p className="font-mono text-[11px] text-[#8b93b0] leading-relaxed mb-3">
+                    Get access to Go/No-Go and Focus Quest for a complete ADHD profile.
+                  </p>
+                  <button
+                    onClick={() => setUserPremium(true)}
+                    className="bg-[#a78bfa] text-[#0d0f14] font-bold text-[13px] px-6 py-2.5 rounded-lg hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(167,139,250,0.3)] transition-all"
+                  >
+                    Go Premium
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row gap-3 items-center">
             <button
               onClick={restart}
@@ -803,11 +862,8 @@ export default function ChronosSortGame({ onComplete }: Props) {
             >
               Play Again
             </button>
-            <Link href="/assessment/focus-quest" className="bg-[#00d4c8] text-[#0d0f14] font-bold text-[15px] px-12 py-4 rounded-lg hover:bg-[#00bfb5] transition-all text-center">
-              Next: Focus Quest →
-            </Link>
-            <Link href="/assessment/focus-task" className="text-[#8b93b0] hover:text-[#dde3f0] font-medium text-[13px] transition-colors">
-              Back to Tasks
+            <Link href="/assessment/results" className="text-[#8b93b0] hover:text-[#dde3f0] font-medium text-[13px] transition-colors">
+              Back to Results
             </Link>
           </div>
         </div>
