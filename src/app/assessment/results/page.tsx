@@ -49,8 +49,8 @@ function recoverResult(): { result: AssessmentResult; userData: AssessmentResult
     const raw = sessionStorage.getItem("adhd-assessment-v2");
     if (!raw) return null;
     const s = JSON.parse(raw);
-    const result = s.results;
-    if (!result) return null;
+    const result = s?.results;
+    if (!result || typeof result !== "object") return null;
     return { result, userData: s.userData };
   } catch {
     return null;

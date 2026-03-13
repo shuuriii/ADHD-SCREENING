@@ -43,7 +43,10 @@ export default function HistoryPage() {
     (async () => {
       try {
         const raw = await secureStorage.getItem(localStorage, HISTORY_KEY);
-        if (raw) setHistory(JSON.parse(raw));
+        if (raw) {
+          const { safeParse, assessmentHistorySchema } = await import("@/lib/schemas");
+          setHistory(safeParse(raw, assessmentHistorySchema) ?? []);
+        }
       } catch {
         // localStorage unavailable
       }

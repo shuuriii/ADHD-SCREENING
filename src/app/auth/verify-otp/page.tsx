@@ -126,9 +126,11 @@ function VerifyOtpForm() {
         ))}
       </div>
 
-      {error && (
-        <p className="text-sm text-red-500 text-center mb-4">{error}</p>
-      )}
+      <div aria-live="polite" aria-atomic="true">
+        {error && (
+          <p className="text-sm text-red-500 text-center mb-4" role="alert">{error}</p>
+        )}
+      </div>
 
       <button
         onClick={handleSubmit}

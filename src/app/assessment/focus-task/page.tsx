@@ -12,6 +12,7 @@ function readHistory(key: string): TaskStatus {
     const raw = localStorage.getItem(key);
     if (!raw) return { completedAt: null };
     const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return { completedAt: null };
     return { completedAt: arr[0]?.completedAt ?? null };
   } catch {
     return { completedAt: null };

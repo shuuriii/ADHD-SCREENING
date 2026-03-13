@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import type { ChronosScores } from "@/lib/chronos-scoring";
 import { Timer } from "lucide-react";
+import { safeParse, chronosScoresSchema } from "@/lib/schemas";
 
 const STORAGE_KEY = "chronos-task-scores";
 
@@ -17,7 +18,7 @@ export default function ChronosTaskCard() {
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(STORAGE_KEY);
-      if (raw) setScores(JSON.parse(raw));
+      if (raw) setScores(safeParse(raw, chronosScoresSchema));
     } catch {
       // sessionStorage unavailable
     }

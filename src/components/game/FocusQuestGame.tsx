@@ -9,6 +9,7 @@ import {
   type FocusQuestScores,
 } from "@/lib/focus-quest-scoring";
 import { saveGameToBundle } from "@/lib/report-bundle";
+import { safeParse, focusQuestHistorySchema } from "@/lib/schemas";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import GamePauseOverlay from "./GamePauseOverlay";
@@ -81,7 +82,7 @@ interface Props {
 function loadHistory(): HistoryEntry[] {
   try {
     const raw = localStorage.getItem(HISTORY_KEY);
-    return raw ? JSON.parse(raw) : [];
+    return raw ? (safeParse(raw, focusQuestHistorySchema) ?? []) : [];
   } catch {
     return [];
   }

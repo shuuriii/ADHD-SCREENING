@@ -41,17 +41,27 @@
 
 ## Week 7 — UX & Legal
 
-- [ ] **F18**: Expand medical disclaimers to intake page, map page, and all entry points
+- [x] **F18**: Expand medical disclaimers — updated CTA section, added disclaimers to all 3 game welcome screens (Go/No-Go, Chronos Sort, Focus Quest), intake already had disclaimer
 - [x] **F21**: Accessibility fixes — skip-nav link, `<main>` landmark, aria-labels on navs, `aria-current="page"` on active links, `role="application"` on ChronosSortGame
 
 ## Week 8+ — Contractual (Ongoing)
 
 - [ ] **F10**: Negotiate HIPAA BAAs with Supabase, Vercel, Google
+  - Supabase: BAA available on Pro plan ($25/mo+). Enable from Dashboard → Settings → Compliance → Sign BAA
+  - Vercel: BAA available on Enterprise plan. Contact sales@vercel.com
+  - Google (OAuth): BAA not typically required for OAuth-only integration (no PHI stored with Google). Document this decision.
 - [ ] **F24**: Execute GDPR DPAs with all subprocessors
+  - Supabase: DPA at supabase.com/legal → auto-sign on Pro plan
+  - Vercel: DPA at vercel.com/legal/dpa → auto-sign on any paid plan
+  - Google: DPA included in Google Cloud Terms of Service
+  - Create a subprocessor register documenting all 3 + their DPA status
 - [ ] **F22**: Verify Supabase encryption-at-rest documentation
+  - Supabase uses AES-256 encryption at rest by default on all plans
+  - Document this in your security posture page or internal wiki
+  - Verify via Dashboard → Settings → Database → SSL enforcement is ON
 - [x] **F23**: Remove redundant email from sessions table (data minimization) — migration at `supabase/migrations/20260314_remove_sessions_email.sql`
 
 ## Low Priority
 
-- [ ] **F19**: Add Zod schema validation for localStorage JSON.parse
+- [x] **F19**: Zod schema validation for all localStorage/sessionStorage JSON.parse — `src/lib/schemas.ts` with `safeParse()` helper, schemas for all 3 game scores, game histories, assessment state, assessment history. Applied to 10 callsites across 9 files.
 - [x] **F20**: Use `x-real-ip` instead of `x-forwarded-for` for rate limiting — falls back to `x-forwarded-for` for local dev

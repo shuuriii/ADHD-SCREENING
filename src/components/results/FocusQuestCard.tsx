@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import type { FocusQuestScores } from "@/lib/focus-quest-scoring";
 import { Waves } from "lucide-react";
+import { safeParse, focusQuestScoresSchema } from "@/lib/schemas";
 
 const STORAGE_KEY = "focus-quest-scores";
 
@@ -17,7 +18,7 @@ export default function FocusQuestCard() {
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(STORAGE_KEY);
-      if (raw) setScores(JSON.parse(raw));
+      if (raw) setScores(safeParse(raw, focusQuestScoresSchema));
     } catch {
       // sessionStorage unavailable
     }

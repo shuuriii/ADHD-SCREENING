@@ -1,18 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAssessment } from "@/contexts/AssessmentContext";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import { Mail } from "lucide-react";
+import { Mail, ShieldCheck, Loader2 } from "lucide-react";
 import Link from "next/link";
 import type { Gender, PetPreference } from "@/questionnaire/types";
 import { createClient, supabaseConfigured } from "@/lib/supabase/client";
 import { initBundle } from "@/lib/report-bundle";
 import { saveSessionViaAPI } from "@/lib/api-client";
 import type { User } from "@supabase/supabase-js";
+
+type OtpStep = "idle" | "sending" | "sent" | "verifying" | "verified";
 
 export default function IntakePage() {
   const router = useRouter();
@@ -25,6 +27,19 @@ export default function IntakePage() {
   const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [user, setUser] = useState<User | null>(null);
+
+  // OTP state
+  const [otpStep, setOtpStep] = useState<OtpStep>("idle");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const otpInputRef = useRef<HTMLInputElement>(null);
+
+  // Stash validated form data so we can proceed after OTP
+  const pendingSubmitRef = useRef<{
+    resolvedName: string;
+    sanitizedEmail: string;
+    sessionId: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!supabaseConfigured) return;
@@ -41,32 +56,28 @@ export default function IntakePage() {
       });
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newErrors: string[] = [];
+  // Focus OTP input when it appears
+  useEffect(() => {
+    if (otpStep === "sent") {
+      otpInputRef.current?.focus();
+    }
+  }, [otpStep]);
 
+  const validateForm = (): string[] => {
+    const newErrors: string[] = [];
     if (!consent) newErrors.push("Please agree to the Privacy Policy and Terms of Service");
     if (!gender) newErrors.push("Please select your gender");
     if (!age || parseInt(age) < 18 || parseInt(age) > 120)
       newErrors.push("Age must be between 18 and 120");
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       newErrors.push("Please enter a valid email address");
+    return newErrors;
+  };
 
-    if (newErrors.length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    // Sanitize text inputs to prevent XSS in rendered output
-    const resolvedName = name.trim().replace(/[<>&"']/g, "") || "Anonymous";
-    const sanitizedEmail = email.trim().replace(/[<>&"']/g, "");
-
-    // Get or create a persistent session ID for this user
-    let sessionId = localStorage.getItem("fayth-session-id");
-    if (!sessionId) {
-      sessionId = crypto.randomUUID();
-      localStorage.setItem("fayth-session-id", sessionId);
-    }
+  const proceedToAssessment = () => {
+    const pending = pendingSubmitRef.current;
+    if (!pending) return;
+    const { resolvedName, sanitizedEmail, sessionId } = pending;
 
     dispatch({
       type: "SET_USER_DATA",
@@ -74,18 +85,16 @@ export default function IntakePage() {
         name: resolvedName,
         gender: gender as Gender,
         age: parseInt(age),
-        petPreference: petPreference,
+        petPreference,
         email: sanitizedEmail || undefined,
       },
     });
 
-    // Initialise the unified report bundle for this session
     initBundle(
       { name: resolvedName, gender: gender as Gender, age: parseInt(age), petPreference, email: email.trim() || undefined },
       sessionId
     );
 
-    // Save session via server-side API (fire-and-forget)
     saveSessionViaAPI({
       sessionId,
       age: parseInt(age),
@@ -98,6 +107,110 @@ export default function IntakePage() {
     dispatch({ type: "SET_INSTRUMENT", payload: "dsm5" });
     router.push("/assessment/questionnaire");
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const newErrors = validateForm();
+    if (newErrors.length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    setErrors([]);
+
+    const resolvedName = name.trim().replace(/[<>&"']/g, "") || "Anonymous";
+    const sanitizedEmail = email.trim().replace(/[<>&"']/g, "");
+
+    let sessionId = localStorage.getItem("fayth-session-id");
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      localStorage.setItem("fayth-session-id", sessionId);
+    }
+
+    pendingSubmitRef.current = { resolvedName, sanitizedEmail, sessionId };
+
+    // If user is signed in via Google or no email entered, skip OTP
+    if (user || !sanitizedEmail) {
+      proceedToAssessment();
+      return;
+    }
+
+    // Send OTP to the entered email
+    setOtpStep("sending");
+    setOtpError("");
+    try {
+      const res = await fetch("/api/otp/send-intake", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: sanitizedEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setOtpError(data.error || "Failed to send verification code");
+        setOtpStep("idle");
+        return;
+      }
+      setOtpStep("sent");
+    } catch {
+      setOtpError("Network error. Please try again.");
+      setOtpStep("idle");
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (otpCode.length !== 6) return;
+
+    setOtpStep("verifying");
+    setOtpError("");
+    try {
+      const res = await fetch("/api/otp/verify-intake", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: otpCode }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setOtpError(data.error || "Verification failed");
+        setOtpStep("sent");
+        return;
+      }
+      setOtpStep("verified");
+      // Brief success state, then proceed
+      setTimeout(proceedToAssessment, 600);
+    } catch {
+      setOtpError("Network error. Please try again.");
+      setOtpStep("sent");
+    }
+  };
+
+  const handleResendOtp = async () => {
+    const sanitizedEmail = email.trim().replace(/[<>&"']/g, "");
+    setOtpStep("sending");
+    setOtpError("");
+    setOtpCode("");
+    try {
+      const res = await fetch("/api/otp/send-intake", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: sanitizedEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setOtpError(data.error || "Failed to resend code");
+        setOtpStep("sent");
+        return;
+      }
+      setOtpStep("sent");
+    } catch {
+      setOtpError("Network error. Please try again.");
+      setOtpStep("sent");
+    }
+  };
+
+  const handleSkipOtp = () => {
+    proceedToAssessment();
+  };
+
+  const showOtpSection = otpStep !== "idle";
 
   return (
     <div className="max-w-xl mx-auto px-4 py-12">
@@ -141,7 +254,8 @@ export default function IntakePage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Your name or nickname"
-              className="w-full px-4 py-3 rounded-xl border border-border bg-white text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow"
+              disabled={showOtpSection}
+              className="w-full px-4 py-3 rounded-xl border border-border bg-white text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow disabled:opacity-50"
             />
           </div>
 
@@ -166,8 +280,9 @@ export default function IntakePage() {
                   type="button"
                   role="radio"
                   aria-checked={gender === g.id}
+                  disabled={showOtpSection}
                   onClick={() => setGender(g.id)}
-                  className={`relative flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all ${
+                  className={`relative flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all disabled:opacity-50 ${
                     gender === g.id
                       ? "border-primary-500 bg-primary-50 ring-1 ring-primary-500"
                       : "border-border bg-white hover:border-primary-300"
@@ -210,8 +325,9 @@ export default function IntakePage() {
                   type="button"
                   role="radio"
                   aria-checked={petPreference === p.id}
+                  disabled={showOtpSection}
                   onClick={() => setPetPreference(p.id)}
-                  className={`relative flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all ${
+                  className={`relative flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all disabled:opacity-50 ${
                     petPreference === p.id
                       ? "border-primary-500 bg-primary-50 ring-1 ring-primary-500"
                       : "border-border bg-white hover:border-primary-300"
@@ -248,7 +364,8 @@ export default function IntakePage() {
               value={age}
               onChange={(e) => setAge(e.target.value)}
               placeholder="18+"
-              className="w-full px-4 py-3 rounded-xl border border-border bg-white text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow"
+              disabled={showOtpSection}
+              className="w-full px-4 py-3 rounded-xl border border-border bg-white text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow disabled:opacity-50"
             />
           </div>
 
@@ -268,11 +385,111 @@ export default function IntakePage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@gmail.com"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-white text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow"
+                  disabled={showOtpSection}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-white text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow disabled:opacity-50"
                 />
               </div>
+              {!showOtpSection && (
+                <p className="text-xs text-muted mt-1.5">
+                  We&apos;ll send a quick verification code to confirm your email.
+                </p>
+              )}
             </div>
           )}
+
+          {/* Inline OTP verification section */}
+          <AnimatePresence>
+            {showOtpSection && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden"
+              >
+                <div className="bg-primary-50 border border-primary-200 rounded-xl p-5">
+                  {otpStep === "sending" && (
+                    <div className="flex items-center gap-3 text-sm text-primary-700">
+                      <Loader2 size={18} className="animate-spin" />
+                      Sending verification code to {email}...
+                    </div>
+                  )}
+
+                  {(otpStep === "sent" || otpStep === "verifying") && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-sm font-medium text-primary-700">
+                        <Mail size={16} />
+                        Code sent to {email}
+                      </div>
+                      <p className="text-xs text-primary-600">
+                        Enter the 6-digit code from your email to verify.
+                      </p>
+                      <div className="flex gap-2">
+                        <input
+                          ref={otpInputRef}
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={6}
+                          value={otpCode}
+                          onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && otpCode.length === 6) {
+                              e.preventDefault();
+                              handleVerifyOtp();
+                            }
+                          }}
+                          placeholder="000000"
+                          disabled={otpStep === "verifying"}
+                          className="w-36 px-4 py-2.5 rounded-lg border border-primary-300 bg-white text-foreground text-center text-lg tracking-[6px] font-mono placeholder:tracking-[6px] focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50"
+                          aria-label="Verification code"
+                        />
+                        <Button
+                          type="button"
+                          onClick={handleVerifyOtp}
+                          disabled={otpCode.length !== 6 || otpStep === "verifying"}
+                          size="sm"
+                        >
+                          {otpStep === "verifying" ? (
+                            <Loader2 size={16} className="animate-spin" />
+                          ) : (
+                            "Verify"
+                          )}
+                        </Button>
+                      </div>
+                      {otpError && (
+                        <p className="text-xs text-red-600">{otpError}</p>
+                      )}
+                      <div className="flex items-center gap-3 text-xs">
+                        <button
+                          type="button"
+                          onClick={handleResendOtp}
+                          className="text-primary-600 underline hover:text-primary-700"
+                        >
+                          Resend code
+                        </button>
+                        <span className="text-muted">or</span>
+                        <button
+                          type="button"
+                          onClick={handleSkipOtp}
+                          className="text-muted underline hover:text-foreground"
+                        >
+                          Skip verification
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {otpStep === "verified" && (
+                    <div className="flex items-center gap-2 text-sm font-medium text-green-700">
+                      <ShieldCheck size={18} />
+                      Email verified! Continuing...
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800 leading-relaxed">
             This is a screening tool, not a diagnosis. Only a qualified healthcare professional can
@@ -284,6 +501,7 @@ export default function IntakePage() {
               type="checkbox"
               checked={consent}
               onChange={(e) => setConsent(e.target.checked)}
+              disabled={showOtpSection}
               className="mt-0.5 h-4 w-4 rounded border-border text-primary-500 focus:ring-primary-500"
             />
             <span className="text-xs text-muted leading-relaxed">
@@ -293,9 +511,11 @@ export default function IntakePage() {
             </span>
           </label>
 
-          <Button type="submit" className="w-full" size="lg">
-            Continue to Assessment
-          </Button>
+          {!showOtpSection && (
+            <Button type="submit" className="w-full" size="lg">
+              Continue to Assessment
+            </Button>
+          )}
         </form>
       </Card>
     </div>

@@ -23,6 +23,7 @@ import {
   determineFollowUps,
 } from "@/questionnaire/scoring";
 import { secureStorage } from "@/lib/client-crypto";
+import { safeParse, assessmentStateSchema, assessmentHistorySchema } from "@/lib/schemas";
 
 type Phase = "intake" | "main" | "context" | "followups" | "results";
 
@@ -142,7 +143,8 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
       try {
         const saved = await secureStorage.getItem(sessionStorage, SESSION_KEY);
         if (saved) {
-          dispatch({ type: "HYDRATE", payload: JSON.parse(saved) });
+          const parsed = safeParse(saved, assessmentStateSchema);
+          if (parsed) dispatch({ type: "HYDRATE", payload: parsed });
         }
       } catch (e) {
         console.warn("[AssessmentContext] hydrate failed:", e);
@@ -217,7 +219,7 @@ async function saveToHistory(result: AssessmentResult) {
   try {
     const historyRaw = await secureStorage.getItem(localStorage, HISTORY_KEY);
     const history: AssessmentResult[] = historyRaw
-      ? JSON.parse(historyRaw)
+      ? (safeParse(historyRaw, assessmentHistorySchema) ?? [])
       : [];
     history.unshift(result);
     await secureStorage.setItem(localStorage, HISTORY_KEY, JSON.stringify(history));

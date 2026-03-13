@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { calcGoNoGoScores, type TrialRecord, type GoNoGoScores } from "@/lib/gonogo-scoring";
 import { saveGameToBundle } from "@/lib/report-bundle";
 import { saveGonogoViaAPI } from "@/lib/api-client";
+import { safeParse, goNoGoHistorySchema } from "@/lib/schemas";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import GamePauseOverlay from "./GamePauseOverlay";
@@ -49,7 +50,7 @@ interface GoNoGoGameProps {
 function loadHistory(): FocusTaskEntry[] {
   try {
     const raw = localStorage.getItem(HISTORY_KEY);
-    return raw ? JSON.parse(raw) : [];
+    return raw ? (safeParse(raw, goNoGoHistorySchema) ?? []) : [];
   } catch {
     return [];
   }

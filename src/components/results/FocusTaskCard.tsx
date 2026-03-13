@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import type { GoNoGoScores } from "@/lib/gonogo-scoring";
 import { Target } from "lucide-react";
+import { safeParse, goNoGoScoresSchema } from "@/lib/schemas";
 
 const STORAGE_KEY = "focus-task-scores";
 
@@ -20,7 +21,7 @@ export default function FocusTaskCard() {
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(STORAGE_KEY);
-      if (raw) setScores(JSON.parse(raw));
+      if (raw) setScores(safeParse(raw, goNoGoScoresSchema));
     } catch {
       // sessionStorage unavailable
     }
