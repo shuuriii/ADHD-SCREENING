@@ -32,11 +32,17 @@ export function verifyCsrf(request: Request): { valid: boolean; error?: string }
     return { valid: false, error: "Missing Origin/Referer header" };
   }
 
+  // Derive the request's own hostname for same-origin comparison
+  const requestHostname =
+    request.headers.get("host")?.replace(/:\d+$/, "") ||
+    new URL(request.url).hostname;
+
   // Check Origin header first (most reliable)
   if (origin) {
     if (ALLOWED_ORIGINS.has(origin)) return { valid: true };
     try {
       const originUrl = new URL(origin);
+      if (originUrl.hostname === requestHostname) return { valid: true };
       if (isVercelOrigin(originUrl.hostname)) return { valid: true };
       for (const allowed of ALLOWED_ORIGINS) {
         const allowedUrl = new URL(allowed);
@@ -52,6 +58,7 @@ export function verifyCsrf(request: Request): { valid: boolean; error?: string }
   if (referer) {
     try {
       const refererUrl = new URL(referer);
+      if (refererUrl.hostname === requestHostname) return { valid: true };
       if (isVercelOrigin(refererUrl.hostname)) return { valid: true };
       for (const allowed of ALLOWED_ORIGINS) {
         const allowedUrl = new URL(allowed);

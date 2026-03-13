@@ -239,16 +239,13 @@ export default function IntakePage() {
 
       <Card>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {(errors.length > 0 || (otpError && otpStep === "idle")) && (
+          {errors.length > 0 && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-4">
               {errors.map((err) => (
                 <p key={err} className="text-sm text-red-600">
                   {err}
                 </p>
               ))}
-              {otpError && otpStep === "idle" && (
-                <p className="text-sm text-red-600">{otpError}</p>
-              )}
             </div>
           )}
 
@@ -430,7 +427,7 @@ export default function IntakePage() {
                   {(otpStep === "sent" || otpStep === "verifying") && (
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 text-sm font-medium text-primary-700">
-                        <Mail size={16} />
+                        <ShieldCheck size={16} />
                         Code sent to {email}
                       </div>
                       <p className="text-xs text-primary-600">
@@ -522,6 +519,12 @@ export default function IntakePage() {
               <Link href="/terms" target="_blank" className="text-primary-600 underline">Terms of Service</Link>.
             </span>
           </label>
+
+          {otpError && otpStep === "idle" && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+              <p className="text-sm text-red-600">{otpError}</p>
+            </div>
+          )}
 
           {!showOtpSection && (
             <Button type="submit" className="w-full" size="lg">
