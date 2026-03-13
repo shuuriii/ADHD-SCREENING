@@ -67,8 +67,8 @@ export default function IntakePage() {
     const newErrors: string[] = [];
     if (!consent) newErrors.push("Please agree to the Privacy Policy and Terms of Service");
     if (!gender) newErrors.push("Please select your gender");
-    if (!age || parseInt(age) < 18 || parseInt(age) > 120)
-      newErrors.push("Age must be between 18 and 120");
+    if (!age || parseInt(age) < 18 || parseInt(age) > 99)
+      newErrors.push("Age must be between 18 and 99");
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       newErrors.push("Please enter a valid email address");
     return newErrors;
@@ -369,12 +369,13 @@ export default function IntakePage() {
             </label>
             <input
               id="age"
-              type="number"
-              min={18}
-              max={120}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={2}
               value={age}
-              onChange={(e) => setAge(e.target.value)}
-              placeholder="18+"
+              onChange={(e) => setAge(e.target.value.replace(/\D/g, "").slice(0, 2))}
+              placeholder="18–99"
               disabled={showOtpSection}
               className="w-full px-4 py-3 rounded-xl border border-border bg-white text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow disabled:opacity-50"
             />
