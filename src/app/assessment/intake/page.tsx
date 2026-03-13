@@ -143,14 +143,22 @@ export default function IntakePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: sanitizedEmail }),
       });
-      const data = await res.json();
+      let data: { error?: string; sent?: boolean } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // non-JSON response
+      }
       if (!res.ok) {
-        setOtpError(data.error || "Failed to send verification code");
+        const msg = data.error || `Failed to send verification code (${res.status})`;
+        console.error("[OTP] send-intake failed:", res.status, data);
+        setOtpError(msg);
         setOtpStep("idle");
         return;
       }
       setOtpStep("sent");
-    } catch {
+    } catch (err) {
+      console.error("[OTP] Network error:", err);
       setOtpError("Network error. Please try again.");
       setOtpStep("idle");
     }
@@ -231,13 +239,16 @@ export default function IntakePage() {
 
       <Card>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {errors.length > 0 && (
+          {(errors.length > 0 || (otpError && otpStep === "idle")) && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-4">
               {errors.map((err) => (
                 <p key={err} className="text-sm text-red-600">
                   {err}
                 </p>
               ))}
+              {otpError && otpStep === "idle" && (
+                <p className="text-sm text-red-600">{otpError}</p>
+              )}
             </div>
           )}
 
