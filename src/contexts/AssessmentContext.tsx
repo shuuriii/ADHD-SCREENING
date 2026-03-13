@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useReducer,
+  useState,
   useEffect,
   useCallback,
   type ReactNode,
@@ -125,6 +126,7 @@ function reducer(state: AssessmentState, action: Action): AssessmentState {
 interface AssessmentContextValue {
   state: AssessmentState;
   dispatch: React.Dispatch<Action>;
+  hydrated: boolean;
   calculateAndSetResults: () => void;
   computeFollowUps: () => void;
 }
@@ -136,6 +138,7 @@ const HISTORY_KEY = "adhd-assessment-history";
 
 export function AssessmentProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const [hydrated, setHydrated] = useState(false);
 
   // Hydrate from sessionStorage on mount (async due to encryption)
   useEffect(() => {
@@ -148,6 +151,8 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
         }
       } catch (e) {
         console.warn("[AssessmentContext] hydrate failed:", e);
+      } finally {
+        setHydrated(true);
       }
     })();
   }, []);
@@ -208,7 +213,7 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
 
   return (
     <AssessmentContext.Provider
-      value={{ state, dispatch, calculateAndSetResults, computeFollowUps }}
+      value={{ state, dispatch, hydrated, calculateAndSetResults, computeFollowUps }}
     >
       {children}
     </AssessmentContext.Provider>

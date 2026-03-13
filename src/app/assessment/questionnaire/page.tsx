@@ -23,6 +23,7 @@ export default function QuestionnairePage() {
   const {
     state,
     dispatch,
+    hydrated,
     calculateAndSetResults,
     computeFollowUps,
   } = useAssessment();
@@ -48,12 +49,12 @@ export default function QuestionnairePage() {
   const [isAdvancing, setIsAdvancing] = useState(false);
   const pendingAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Redirect if no user data
+  // Redirect if no user data (wait for hydration to avoid false redirect)
   useEffect(() => {
-    if (!state.userData.gender && currentPhase !== "results") {
+    if (hydrated && !state.userData.gender && currentPhase !== "results") {
       router.replace("/assessment/intake");
     }
-  }, [state.userData.gender, currentPhase, router]);
+  }, [hydrated, state.userData.gender, currentPhase, router]);
 
   // Calculate progress
   const getProgress = () => {
