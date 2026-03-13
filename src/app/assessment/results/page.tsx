@@ -16,7 +16,7 @@ import ChronosTaskCard from "@/components/results/ChronosTaskCard";
 import FocusQuestCard from "@/components/results/FocusQuestCard";
 import PDFDownloadButton from "@/components/report/PDFDownloadButton";
 import Button from "@/components/ui/Button";
-import { RotateCcw, Gamepad2 } from "lucide-react";
+import { RotateCcw, Gamepad2, Crown, ListChecks, Brain, Bot, UserCheck } from "lucide-react";
 import { saveQuestionnaireToBundle } from "@/lib/report-bundle";
 import { saveQuestionnaireViaAPI } from "@/lib/api-client";
 import type { AssessmentResult } from "@/questionnaire/types";
@@ -215,6 +215,64 @@ export default function ResultsPage() {
                 Start Gamified Assessments
             </a>
           </div>
+        </div>
+      </div>
+
+      {/* ── Go Premium CTA ── */}
+      <div className="rounded-2xl border-2 border-purple-300/60 bg-gradient-to-br from-purple-50 via-indigo-50 to-violet-50 p-6 mb-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-40 h-40 bg-purple-200/30 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
+        <div className="relative">
+          <div className="flex items-center gap-2 mb-1">
+            <Crown size={20} className="text-purple-600" />
+            <h3 className="font-bold text-foreground text-lg">Go Premium</h3>
+          </div>
+          <p className="text-sm text-muted mb-5">
+            All the help you need in one place — tools, therapy, AI, and experts for your ADHD journey.
+          </p>
+
+          <div className="grid grid-cols-2 gap-3 mb-5">
+            <div className="bg-white/70 border border-purple-200/50 rounded-xl p-4 flex gap-3 items-start">
+              <div className="p-2 bg-purple-100 rounded-lg shrink-0">
+                <ListChecks size={18} className="text-purple-600" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-foreground">Task Management</div>
+                <div className="text-xs text-muted mt-0.5">ADHD-friendly planners, reminders, and focus timers</div>
+              </div>
+            </div>
+            <div className="bg-white/70 border border-purple-200/50 rounded-xl p-4 flex gap-3 items-start">
+              <div className="p-2 bg-indigo-100 rounded-lg shrink-0">
+                <Brain size={18} className="text-indigo-600" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-foreground">CBT Modules</div>
+                <div className="text-xs text-muted mt-0.5">Evidence-based cognitive behavioral therapy exercises</div>
+              </div>
+            </div>
+            <div className="bg-white/70 border border-purple-200/50 rounded-xl p-4 flex gap-3 items-start">
+              <div className="p-2 bg-sky-100 rounded-lg shrink-0">
+                <Bot size={18} className="text-sky-600" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-foreground">AI Coach</div>
+                <div className="text-xs text-muted mt-0.5">24/7 personalized guidance and accountability partner</div>
+              </div>
+            </div>
+            <div className="bg-white/70 border border-purple-200/50 rounded-xl p-4 flex gap-3 items-start">
+              <div className="p-2 bg-emerald-100 rounded-lg shrink-0">
+                <UserCheck size={18} className="text-emerald-600" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-foreground">Certified Experts</div>
+                <div className="text-xs text-muted mt-0.5">Connect with ADHD specialists for diagnosis and support</div>
+              </div>
+            </div>
+          </div>
+
+          <button className="w-full inline-flex items-center justify-center rounded-xl font-semibold px-6 py-3.5 text-base bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150">
+            <Crown size={16} className="mr-2" />
+            Go Premium
+          </button>
         </div>
       </div>
 
