@@ -14,7 +14,7 @@ import ProgressBar from "@/components/assessment/ProgressBar";
 import PhaseTransition from "@/components/assessment/PhaseTransition";
 import MilestoneAnimation from "@/components/assessment/MilestoneAnimation";
 import Button from "@/components/ui/Button";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Undo2 } from "lucide-react";
 
 const TOTAL_CONTEXT = 3;
 
@@ -45,6 +45,8 @@ export default function QuestionnairePage() {
     subtitle: "",
   });
   const [showMilestone, setShowMilestone] = useState(false);
+  const [isAdvancing, setIsAdvancing] = useState(false);
+  const pendingAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Redirect if no user data
   useEffect(() => {
@@ -82,7 +84,9 @@ export default function QuestionnairePage() {
       }
 
       // Auto-advance after delay
-      setTimeout(() => {
+      setIsAdvancing(true);
+      pendingAdvanceRef.current = setTimeout(() => {
+        setIsAdvancing(false);
         if (currentQuestionIndex < TOTAL_MAIN - 1) {
           dispatch({ type: "NEXT_QUESTION" });
         } else {
@@ -93,7 +97,7 @@ export default function QuestionnairePage() {
           });
           setShowPhaseTransition(true);
         }
-      }, 350);
+      }, 800);
     },
     [currentQuestionIndex, dispatch, TOTAL_MAIN, MILESTONE_INDEX]
   );
@@ -105,7 +109,9 @@ export default function QuestionnairePage() {
         payload: { questionId, value },
       });
 
-      setTimeout(() => {
+      setIsAdvancing(true);
+      pendingAdvanceRef.current = setTimeout(() => {
+        setIsAdvancing(false);
         if (currentQuestionIndex < TOTAL_CONTEXT - 1) {
           dispatch({ type: "NEXT_QUESTION" });
         } else {
@@ -117,7 +123,7 @@ export default function QuestionnairePage() {
           });
           setShowPhaseTransition(true);
         }
-      }, 350);
+      }, 800);
     },
     [currentQuestionIndex, dispatch, computeFollowUps]
   );
@@ -147,13 +153,15 @@ export default function QuestionnairePage() {
         payload: { questionId, value },
       });
 
-      setTimeout(() => {
+      setIsAdvancing(true);
+      pendingAdvanceRef.current = setTimeout(() => {
+        setIsAdvancing(false);
         if (currentQuestionIndex < followUpQuestions.length - 1) {
           dispatch({ type: "NEXT_QUESTION" });
         } else {
           finishAssessment();
         }
-      }, 350);
+      }, 800);
     },
     [
       currentQuestionIndex,
@@ -162,6 +170,14 @@ export default function QuestionnairePage() {
       finishAssessment,
     ]
   );
+
+  const handleUndo = useCallback(() => {
+    if (pendingAdvanceRef.current) {
+      clearTimeout(pendingAdvanceRef.current);
+      pendingAdvanceRef.current = null;
+    }
+    setIsAdvancing(false);
+  }, []);
 
   const handlePhaseTransitionComplete = useCallback(() => {
     setShowPhaseTransition(false);
@@ -294,6 +310,24 @@ export default function QuestionnairePage() {
       />
 
       <AnimatePresence mode="wait">{renderQuestion()}</AnimatePresence>
+
+      {isAdvancing && (
+        <div className="mt-4 flex items-center gap-3 bg-primary-50 border border-primary-200 rounded-xl px-4 py-3">
+          <div className="flex-1 h-1.5 bg-primary-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary-500 rounded-full"
+              style={{ animation: "fillBar 0.8s linear forwards" }}
+            />
+          </div>
+          <button
+            onClick={handleUndo}
+            className="flex items-center gap-1.5 text-sm font-medium text-primary-700 hover:text-primary-900 transition-colors shrink-0"
+          >
+            <Undo2 size={14} />
+            Undo
+          </button>
+        </div>
+      )}
 
       {currentQuestionIndex > 0 && (
         <div className="mt-6">

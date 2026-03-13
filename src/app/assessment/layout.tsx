@@ -2,6 +2,7 @@
 
 import { AssessmentProvider } from "@/contexts/AssessmentContext";
 import { SoundProvider } from "@/contexts/SoundContext";
+import { MotionConfig } from "framer-motion";
 import Header from "@/components/ui/Header";
 import SoundToggle from "@/components/ui/SoundToggle";
 import AnswerBurst from "@/components/assessment/AnswerBurst";
@@ -15,17 +16,19 @@ export default function AssessmentLayout({
 }) {
   return (
     <ErrorBoundary>
-      <AssessmentProvider>
-        <SoundProvider>
-          <CursorGlow />
-          <AnswerBurst />
-          <Header />
-          <div className="min-h-screen bg-gradient-to-b from-primary-50 via-white to-calm-neutral">
-            {children}
-          </div>
-          <SoundToggle />
-        </SoundProvider>
-      </AssessmentProvider>
+      <MotionConfig reducedMotion="user">
+        <AssessmentProvider>
+          <SoundProvider>
+            <CursorGlow />
+            <AnswerBurst />
+            <Header />
+            <main id="main-content" className="min-h-screen bg-gradient-to-b from-primary-50 via-white to-calm-neutral">
+              {children}
+            </main>
+            <SoundToggle />
+          </SoundProvider>
+        </AssessmentProvider>
+      </MotionConfig>
     </ErrorBoundary>
   );
 }

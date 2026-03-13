@@ -19,7 +19,7 @@ export default function RootError({
       </pre>
       <button
         onClick={reset}
-        className="bg-purple-600 text-white font-medium text-sm px-6 py-2.5 rounded-lg hover:bg-purple-700 transition-colors"
+        className="bg-primary-600 text-white font-medium text-sm px-6 py-2.5 rounded-lg hover:bg-primary-700 transition-colors"
       >
         Try Again
       </button>

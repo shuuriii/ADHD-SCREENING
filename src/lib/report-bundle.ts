@@ -1,7 +1,8 @@
-import type { AssessmentResult, ASRSResult, UserData } from "@/questionnaire/types";
+import type { AssessmentResult, UserData } from "@/questionnaire/types";
 import type { GoNoGoScores } from "@/lib/gonogo-scoring";
 import type { ChronosScores } from "@/lib/chronos-scoring";
 import type { FocusQuestScores } from "@/lib/focus-quest-scoring";
+import { secureStorage } from "@/lib/client-crypto";
 
 export interface ReportBundle {
   sessionId: string;
@@ -9,8 +10,8 @@ export interface ReportBundle {
   updatedAt: string;
   userData: Pick<UserData, "name" | "age" | "gender" | "petPreference" | "email">;
   questionnaire?: {
-    instrument: "dsm5" | "asrs";
-    result: AssessmentResult | ASRSResult;
+    instrument: "dsm5";
+    result: AssessmentResult;
     completedAt: string;
   };
   games: {
@@ -22,29 +23,30 @@ export interface ReportBundle {
 
 const BUNDLE_KEY = "fayth-report-bundle";
 
-function readBundle(): ReportBundle | null {
+async function readBundle(): Promise<ReportBundle | null> {
   try {
-    const raw = localStorage.getItem(BUNDLE_KEY);
+    const raw = await secureStorage.getItem(localStorage, BUNDLE_KEY);
     return raw ? (JSON.parse(raw) as ReportBundle) : null;
-  } catch {
+  } catch (e) {
+    console.warn("[report-bundle] readBundle failed:", e);
     return null;
   }
 }
 
-function writeBundle(bundle: ReportBundle): void {
+async function writeBundle(bundle: ReportBundle): Promise<void> {
   try {
     bundle.updatedAt = new Date().toISOString();
-    localStorage.setItem(BUNDLE_KEY, JSON.stringify(bundle));
-  } catch {
-    // localStorage unavailable — silent fail
+    await secureStorage.setItem(localStorage, BUNDLE_KEY, JSON.stringify(bundle));
+  } catch (e) {
+    console.warn("[report-bundle] writeBundle failed:", e);
   }
 }
 
 /** Called on intake submit. Creates or resets the bundle for this session. */
-export function initBundle(
+export async function initBundle(
   userData: Pick<UserData, "name" | "age" | "gender" | "petPreference" | "email">,
   sessionId: string
-): void {
+): Promise<void> {
   const now = new Date().toISOString();
   const bundle: ReportBundle = {
     sessionId,
@@ -53,40 +55,40 @@ export function initBundle(
     userData,
     games: {},
   };
-  writeBundle(bundle);
+  await writeBundle(bundle);
 }
 
 /** Called on results page. Merges questionnaire result into the bundle. */
-export function saveQuestionnaireToBundle(
-  instrument: "dsm5" | "asrs",
-  result: AssessmentResult | ASRSResult
-): void {
-  const bundle = readBundle();
+export async function saveQuestionnaireToBundle(
+  instrument: "dsm5",
+  result: AssessmentResult
+): Promise<void> {
+  const bundle = await readBundle();
   if (!bundle) return;
   bundle.questionnaire = {
     instrument,
     result,
     completedAt: new Date().toISOString(),
   };
-  writeBundle(bundle);
+  await writeBundle(bundle);
 }
 
 /** Called on each game completion. Merges game scores into the bundle. */
-export function saveGameToBundle(game: "gonogo", scores: GoNoGoScores): void;
-export function saveGameToBundle(game: "chronos", scores: ChronosScores): void;
-export function saveGameToBundle(game: "focusQuest", scores: FocusQuestScores): void;
-export function saveGameToBundle(
+export async function saveGameToBundle(game: "gonogo", scores: GoNoGoScores): Promise<void>;
+export async function saveGameToBundle(game: "chronos", scores: ChronosScores): Promise<void>;
+export async function saveGameToBundle(game: "focusQuest", scores: FocusQuestScores): Promise<void>;
+export async function saveGameToBundle(
   game: "gonogo" | "chronos" | "focusQuest",
   scores: GoNoGoScores | ChronosScores | FocusQuestScores
-): void {
-  const bundle = readBundle();
+): Promise<void> {
+  const bundle = await readBundle();
   if (!bundle) return;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (bundle.games as any)[game] = { scores, completedAt: new Date().toISOString() };
-  writeBundle(bundle);
+  await writeBundle(bundle);
 }
 
 /** Returns the full bundle, or null if not started yet. */
-export function getBundle(): ReportBundle | null {
+export async function getBundle(): Promise<ReportBundle | null> {
   return readBundle();
 }

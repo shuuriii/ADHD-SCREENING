@@ -2,8 +2,7 @@
 
 import FocusQuestGame from "@/components/game/FocusQuestGame";
 import type { FocusQuestScores } from "@/lib/focus-quest-scoring";
-import { saveFocusQuestScore } from "@/lib/supabase/focus-quest-scores";
-import { createClient, supabaseConfigured } from "@/lib/supabase/client";
+import { saveFocusQuestViaAPI } from "@/lib/api-client";
 
 export default function FocusQuestPage() {
   const handleComplete = (scores: FocusQuestScores) => {
@@ -12,12 +11,10 @@ export default function FocusQuestPage() {
     } catch {
       // ignore
     }
-    // Supabase fire-and-forget
+    // Save via server-side API (fire-and-forget)
     const sessionId = localStorage.getItem("fayth-session-id");
-    if (sessionId && supabaseConfigured) {
-      createClient().auth.getUser().then(({ data }) => {
-        saveFocusQuestScore(scores, sessionId, data.user?.id);
-      });
+    if (sessionId) {
+      saveFocusQuestViaAPI(sessionId, scores);
     }
   };
 

@@ -4,22 +4,26 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
-import { Clock, FileText, Trash2 } from "lucide-react";
-import type { AssessmentResult, ASRSResult } from "@/questionnaire/types";
+import { Clock, FileText, Trash2, Download, AlertTriangle } from "lucide-react";
+import type { AssessmentResult } from "@/questionnaire/types";
+import { secureStorage } from "@/lib/client-crypto";
 
 const HISTORY_KEY = "adhd-assessment-history";
-type HistoryEntry = AssessmentResult | ASRSResult;
+
+// Legacy ASRS entries may still exist in localStorage from before removal
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type HistoryEntry = AssessmentResult | (Record<string, any> & { instrument: "asrs" });
 
 function getRiskLabel(entry: HistoryEntry): string {
   if (entry.instrument === "asrs") {
-    return entry.partAHighRisk ? "High Risk" : "Low Risk";
+    return (entry as Record<string, unknown>).partAHighRisk ? "High Risk" : "Low Risk";
   }
   return entry.presentationType.label;
 }
 
 function getRiskColor(entry: HistoryEntry): string {
   if (entry.instrument === "asrs") {
-    return entry.partAHighRisk
+    return (entry as Record<string, unknown>).partAHighRisk
       ? "bg-red-100 text-red-700"
       : "bg-green-100 text-green-700";
   }
@@ -31,19 +35,70 @@ function getRiskColor(entry: HistoryEntry): string {
 
 export default function HistoryPage() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(HISTORY_KEY);
-      if (raw) setHistory(JSON.parse(raw));
-    } catch {
-      // localStorage unavailable
-    }
+    (async () => {
+      try {
+        const raw = await secureStorage.getItem(localStorage, HISTORY_KEY);
+        if (raw) setHistory(JSON.parse(raw));
+      } catch {
+        // localStorage unavailable
+      }
+    })();
   }, []);
 
   const clearHistory = () => {
-    localStorage.removeItem(HISTORY_KEY);
+    secureStorage.removeItem(localStorage, HISTORY_KEY);
     setHistory([]);
+  };
+
+  const handleDeleteAllData = async () => {
+    setDeleting(true);
+    try {
+      const sessionId = localStorage.getItem("fayth-session-id");
+      await fetch("/api/data/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      });
+      // Clear all local data
+      secureStorage.removeItem(localStorage, HISTORY_KEY);
+      secureStorage.removeItem(localStorage, "fayth-report-bundle");
+      secureStorage.removeItem(localStorage, "focus-task-history");
+      secureStorage.removeItem(localStorage, "chronos-sort-history");
+      secureStorage.removeItem(localStorage, "focus-quest-history");
+      localStorage.removeItem("fayth-session-id");
+      try { sessionStorage.clear(); } catch { /* ignore */ }
+      setHistory([]);
+      setShowDeleteConfirm(false);
+    } catch {
+      // Deletion failed silently
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const sessionId = localStorage.getItem("fayth-session-id");
+      const url = sessionId ? `/api/data/export?sessionId=${sessionId}` : "/api/data/export";
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `fayth-data-export-${new Date().toISOString().split("T")[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch {
+      // Export failed silently
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -150,6 +205,68 @@ export default function HistoryPage() {
           ))}
         </div>
       )}
+
+      {/* Data Management Section */}
+      <motion.div
+        className="mt-12 pt-8 border-t border-border/50"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+      >
+        <h2 className="text-sm font-semibold text-foreground mb-1">Your Data</h2>
+        <p className="text-xs text-muted mb-4">
+          Download or delete all your data stored on our servers and this device.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 transition-colors disabled:opacity-50"
+          >
+            <Download size={14} />
+            {exporting ? "Exporting..." : "Export My Data"}
+          </button>
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-600 transition-colors"
+          >
+            <Trash2 size={14} />
+            Delete All My Data
+          </button>
+        </div>
+
+        {showDeleteConfirm && (
+          <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4">
+            <div className="flex items-start gap-2 mb-3">
+              <AlertTriangle size={16} className="text-red-500 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-red-800">
+                  Are you sure? This cannot be undone.
+                </p>
+                <p className="text-xs text-red-600 mt-1">
+                  This will permanently delete all your screening results, game scores, and profile
+                  data from both our servers and this device.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleDeleteAllData}
+                disabled={deleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
+              >
+                {deleting ? "Deleting..." : "Yes, Delete Everything"}
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 text-sm text-muted hover:text-foreground transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </motion.div>
     </div>
   );
 }

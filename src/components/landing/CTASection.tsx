@@ -29,7 +29,7 @@ export default function CTASection() {
           </Link>
 
           <p className="mt-6 text-xs text-muted/50 leading-relaxed max-w-sm mx-auto">
-            This is a screening tool, not a diagnosis. We made it to help us understand our own symptoms — and share it with everyone. Take the report to your doctor.
+            This is a screening tool, not a diagnosis. Only a qualified healthcare professional can diagnose ADHD. The cognitive tasks are research-informed but not FDA-approved diagnostic devices. Please share your results with your doctor.
           </p>
         </motion.div>
       </div>

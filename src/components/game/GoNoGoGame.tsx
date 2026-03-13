@@ -2,9 +2,11 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { calcGoNoGoScores, type TrialRecord, type GoNoGoScores } from "@/lib/gonogo-scoring";
-import { saveGameScore } from "@/lib/supabase/game-scores";
-import { createClient, supabaseConfigured } from "@/lib/supabase/client";
 import { saveGameToBundle } from "@/lib/report-bundle";
+import { saveGonogoViaAPI } from "@/lib/api-client";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import GamePauseOverlay from "./GamePauseOverlay";
 
 const CFG = {
   PRACTICE: 20,
@@ -64,7 +66,9 @@ function saveToHistory(scores: GoNoGoScores) {
 }
 
 export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
+  const router = useRouter();
   const [screen, setScreen] = useState<Screen>("welcome");
+  const [isPaused, setIsPaused] = useState(false);
   const [trialInfo, setTrialInfo] = useState("");
   const [activeCell, setActiveCell] = useState<{ index: number; type: "go" | "nogo" } | null>(null);
   const [hint, setHint] = useState("");
@@ -131,12 +135,10 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
         setHistory(loadHistory());
         saveGameToBundle("gonogo", s);
         onComplete?.(s);
-        // Save to Supabase (fire-and-forget)
+        // Save via server-side API (fire-and-forget)
         const sessionId = localStorage.getItem("fayth-session-id");
-        if (sessionId && supabaseConfigured) {
-          createClient().auth.getUser().then(({ data }) => {
-            saveGameScore(s, sessionId, data.user?.id);
-          });
+        if (sessionId) {
+          saveGonogoViaAPI(sessionId, s);
         }
         setScreen("results");
       }
@@ -230,6 +232,38 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
     setScreen("welcome");
   };
 
+  const handlePause = useCallback(() => {
+    clearTimers();
+    blockedRef.current = true;
+    setActiveCell(null);
+    setIsPaused(true);
+  }, [clearTimers]);
+
+  const handleResume = useCallback(() => {
+    setIsPaused(false);
+    blockedRef.current = false;
+    if (idxRef.current > 0) idxRef.current--;
+    addTimer(nextTrial, 600);
+  }, [addTimer, nextTrial]);
+
+  const handleQuit = useCallback(() => {
+    clearTimers();
+    router.push("/assessment/focus-task");
+  }, [clearTimers, router]);
+
+  // Escape key to toggle pause
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && screen === "game") {
+        e.preventDefault();
+        if (isPaused) handleResume();
+        else handlePause();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [screen, isPaused, handlePause, handleResume]);
+
   const scoreColor = (value: number, threshLow: number, threshHigh: number, invert = false) => {
     if (invert) {
       return value > threshHigh ? "#f87171" : value > threshLow ? "#f5c842" : "#34d399";
@@ -240,40 +274,50 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
   const lastEntry = history[0];
 
   return (
-    <div className="min-h-screen bg-[#0d0f14] text-[#dde3f0] flex items-center justify-center font-sans">
+    <div className="fixed inset-0 z-10 bg-[#0d0f14] text-[#dde3f0] flex items-center justify-center font-sans overflow-y-auto">
+
+      {screen === "game" && (
+        <GamePauseOverlay
+          isPaused={isPaused}
+          onResume={isPaused ? handleResume : handlePause}
+          onQuit={handleQuit}
+          accentColor="#f5c842"
+          bgColor="#0d0f14"
+        />
+      )}
 
       {/* Welcome */}
       {screen === "welcome" && (
         <div className="flex flex-col items-center text-center px-6 py-10 animate-fadeIn">
-          <p className="font-mono text-[10px] tracking-[3px] uppercase text-[#5a6180] mb-5">
+          <p className="font-mono text-[10px] tracking-[3px] uppercase text-[#8b93b0] mb-5">
             FocusOS — Cognitive Assessment
           </p>
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-tight mb-3">
             Measure your<br /><span className="text-[#f5c842]">Visual Focus</span>
           </h1>
-          <p className="font-mono text-[13px] text-[#5a6180] leading-relaxed max-w-[400px] mb-9">
+          <p className="font-mono text-[13px] text-[#8b93b0] leading-relaxed max-w-[400px] mb-9">
             A grid-based attention task used in clinical ADHD research.<br />
             No right or wrong answers — just respond naturally.
           </p>
           <div className="flex gap-9 mb-8">
             <div>
-              <div className="text-[32px] font-extrabold tracking-tight">15<span className="text-base text-[#5a6180]">min</span></div>
-              <div className="font-mono text-[10px] text-[#5a6180] uppercase tracking-wider mt-1">Duration</div>
+              <div className="text-[32px] font-extrabold tracking-tight">15<span className="text-base text-[#8b93b0]">min</span></div>
+              <div className="font-mono text-[10px] text-[#8b93b0] uppercase tracking-wider mt-1">Duration</div>
             </div>
             <div>
               <div className="text-[32px] font-extrabold tracking-tight">160</div>
-              <div className="font-mono text-[10px] text-[#5a6180] uppercase tracking-wider mt-1">Trials</div>
+              <div className="font-mono text-[10px] text-[#8b93b0] uppercase tracking-wider mt-1">Trials</div>
             </div>
             <div>
               <div className="text-[32px] font-extrabold tracking-tight">4</div>
-              <div className="font-mono text-[10px] text-[#5a6180] uppercase tracking-wider mt-1">Scores</div>
+              <div className="font-mono text-[10px] text-[#8b93b0] uppercase tracking-wider mt-1">Scores</div>
             </div>
           </div>
 
           {/* Previous performance */}
           {lastEntry && (
             <div className="w-full max-w-[380px] mb-8 p-4 bg-[#13161e] border border-[#252a38] rounded-xl">
-              <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#5a6180] mb-3">
+              <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#8b93b0] mb-3">
                 Your last attempt — {new Date(lastEntry.completedAt).toLocaleDateString()}
               </p>
               <div className="flex justify-center gap-6">
@@ -281,23 +325,23 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
                   <div className="text-[22px] font-extrabold" style={{ color: scoreColor(lastEntry.scores.aqvis, 70, 85) }}>
                     {lastEntry.scores.aqvis}
                   </div>
-                  <div className="font-mono text-[9px] text-[#5a6180] uppercase tracking-wider">AQvis</div>
+                  <div className="font-mono text-[9px] text-[#8b93b0] uppercase tracking-wider">AQvis</div>
                 </div>
                 <div className="text-center">
                   <div className="text-[22px] font-extrabold" style={{ color: scoreColor(lastEntry.scores.rcqvis, 70, 85) }}>
                     {lastEntry.scores.rcqvis}
                   </div>
-                  <div className="font-mono text-[9px] text-[#5a6180] uppercase tracking-wider">RCQvis</div>
+                  <div className="font-mono text-[9px] text-[#8b93b0] uppercase tracking-wider">RCQvis</div>
                 </div>
                 <div className="text-center">
                   <div className="text-[22px] font-extrabold" style={{ color: scoreColor(lastEntry.scores.icv, 25, 35, true) }}>
                     {lastEntry.scores.icv}%
                   </div>
-                  <div className="font-mono text-[9px] text-[#5a6180] uppercase tracking-wider">ICV</div>
+                  <div className="font-mono text-[9px] text-[#8b93b0] uppercase tracking-wider">ICV</div>
                 </div>
                 <div className="text-center">
                   <div className="text-[22px] font-extrabold text-[#dde3f0]">{lastEntry.scores.meanRT}</div>
-                  <div className="font-mono text-[9px] text-[#5a6180] uppercase tracking-wider">RT ms</div>
+                  <div className="font-mono text-[9px] text-[#8b93b0] uppercase tracking-wider">RT ms</div>
                 </div>
               </div>
             </div>
@@ -306,6 +350,9 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
           <button onClick={() => setScreen("instructions")} className="bg-[#f5c842] text-[#0d0f14] font-bold text-[15px] px-12 py-4 rounded-lg hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(245,200,66,0.3)] transition-all">
             {lastEntry ? "Play Again" : "Begin Assessment"}
           </button>
+          <p className="mt-6 font-mono text-[10px] text-[#8b93b0] leading-relaxed max-w-[360px]">
+            Screening tool only — not a diagnosis. Not an FDA-approved diagnostic device. Share results with your doctor.
+          </p>
         </div>
       )}
 
@@ -317,20 +364,20 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
             <div className="bg-[#1b1f2b] border border-[#252a38] rounded-xl p-6 w-[168px]">
               <div className="w-[52px] h-[52px] rounded-[10px] mx-auto mb-4 bg-[#f5c842] shadow-[0_0_20px_rgba(245,200,66,0.3)]" />
               <div className="text-[15px] font-bold text-[#f5c842] mb-1.5">Yellow — TAP</div>
-              <div className="font-mono text-[11px] text-[#5a6180] leading-relaxed">Press spacebar or tap the screen as fast as you can</div>
+              <div className="font-mono text-[11px] text-[#8b93b0] leading-relaxed">Press spacebar or tap the screen as fast as you can</div>
             </div>
             <div className="bg-[#1b1f2b] border border-[#252a38] rounded-xl p-6 w-[168px]">
-              <div className="w-[52px] h-[52px] rounded-[10px] mx-auto mb-4 bg-[#1b1f2b] border border-[#5a6180]" />
-              <div className="text-[15px] font-bold text-[#5a6180] mb-1.5">Dark — WAIT</div>
-              <div className="font-mono text-[11px] text-[#5a6180] leading-relaxed">Do nothing. Hold your response completely.</div>
+              <div className="w-[52px] h-[52px] rounded-[10px] mx-auto mb-4 bg-[#1b1f2b] border border-[#8b93b0]" />
+              <div className="text-[15px] font-bold text-[#8b93b0] mb-1.5">Dark — WAIT</div>
+              <div className="font-mono text-[11px] text-[#8b93b0] leading-relaxed">Do nothing. Hold your response completely.</div>
             </div>
           </div>
-          <p className="font-mono text-[13px] text-[#5a6180] leading-relaxed max-w-[400px] mb-4">
+          <p className="font-mono text-[13px] text-[#8b93b0] leading-relaxed max-w-[400px] mb-4">
             A square appears in one cell of a 4x4 grid.<br />
             Yellow = tap fast. Dark = stay still.<br />
             Speed matters, but so does accuracy.
           </p>
-          <p className="font-mono text-[11px] text-[#5a6180] leading-relaxed max-w-[400px] mb-9">
+          <p className="font-mono text-[11px] text-[#8b93b0] leading-relaxed max-w-[400px] mb-9">
             <span className="text-[#4f8ef7]">Keyboard:</span> press Spacebar to respond.{" "}
             <span className="text-[#4f8ef7]">Touch:</span> tap anywhere on the grid.
           </p>
@@ -353,25 +400,25 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
           <div className="flex flex-col gap-3 mb-8 text-left w-full">
             <div className="bg-[#13161e] border border-[#252a38] rounded-xl p-4">
               <div className="text-[#f5c842] font-bold text-[13px] mb-1">Attention isn&apos;t a snapshot</div>
-              <div className="font-mono text-[11px] text-[#5a6180] leading-relaxed">
+              <div className="font-mono text-[11px] text-[#8b93b0] leading-relaxed">
                 ADHD affects how attention holds up over time, not just in short bursts. The task needs enough trials to measure whether your focus drifts — something that only shows up after several minutes.
               </div>
             </div>
             <div className="bg-[#13161e] border border-[#252a38] rounded-xl p-4">
               <div className="text-[#4f8ef7] font-bold text-[13px] mb-1">The score needs real data</div>
-              <div className="font-mono text-[11px] text-[#5a6180] leading-relaxed">
+              <div className="font-mono text-[11px] text-[#8b93b0] leading-relaxed">
                 Your ICV score (reaction time variability) can only be calculated reliably from 100+ trials. Fewer trials = noisy, unreliable results. 160 is the clinical minimum.
               </div>
             </div>
             <div className="bg-[#13161e] border border-[#252a38] rounded-xl p-4">
               <div className="text-[#34d399] font-bold text-[13px] mb-1">The discomfort is the data</div>
-              <div className="font-mono text-[11px] text-[#5a6180] leading-relaxed">
+              <div className="font-mono text-[11px] text-[#8b93b0] leading-relaxed">
                 Feeling bored, restless, or distracted during the task is normal — and meaningful. Your brain&apos;s response to a monotonous sustained task is exactly what&apos;s being measured.
               </div>
             </div>
           </div>
 
-          <p className="font-mono text-[12px] text-[#5a6180] leading-relaxed mb-9">
+          <p className="font-mono text-[12px] text-[#8b93b0] leading-relaxed mb-9">
             Find a quiet spot, put your phone down, and commit to finishing.<br />
             <span className="text-[#dde3f0]">Your results are only valid if you complete the full task.</span>
           </p>
@@ -389,7 +436,7 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
             Practice Round
           </span>
           <h2 className="text-[22px] font-bold tracking-tight mb-7">20 practice trials<br />with feedback</h2>
-          <p className="font-mono text-[13px] text-[#5a6180] leading-relaxed max-w-[400px] mb-9">
+          <p className="font-mono text-[13px] text-[#8b93b0] leading-relaxed max-w-[400px] mb-9">
             You&apos;ll see Correct or Too Soon after each tap.<br />Feedback stops in the real task.
           </p>
           <button onClick={startPractice} className="bg-[#f5c842] text-[#0d0f14] font-bold text-[15px] px-12 py-4 rounded-lg hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(245,200,66,0.3)] transition-all">
@@ -405,7 +452,7 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
             Real Assessment
           </span>
           <h2 className="text-[22px] font-bold tracking-tight mb-7">Practice complete.<br />Real task begins now.</h2>
-          <p className="font-mono text-[13px] text-[#5a6180] leading-relaxed max-w-[400px] mb-9">
+          <p className="font-mono text-[13px] text-[#8b93b0] leading-relaxed max-w-[400px] mb-9">
             160 trials. No feedback.<br />Stay focused — the task measures attention over time.<br />Take a breath.
           </p>
           <button onClick={startReal} className="bg-[#f5c842] text-[#0d0f14] font-bold text-[15px] px-12 py-4 rounded-lg hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(245,200,66,0.3)] transition-all">
@@ -417,7 +464,7 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
       {/* Game */}
       {screen === "game" && (
         <div className="flex flex-col items-center gap-5 px-6 py-10">
-          <div className="font-mono text-[11px] text-[#5a6180] tracking-wider h-5">{trialInfo}</div>
+          <div className="font-mono text-[11px] text-[#8b93b0] tracking-wider h-5">{trialInfo}</div>
           <div
             className="grid grid-cols-4 gap-1.5 p-3.5 bg-[#13161e] border border-[#252a38] rounded-[14px] cursor-pointer select-none"
             role="application"
@@ -432,13 +479,13 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
                   activeCell?.index === i
                     ? activeCell.type === "go"
                       ? "bg-[#f5c842] border-[#f5c842] shadow-[0_0_28px_rgba(245,200,66,0.3)]"
-                      : "bg-[#1b1f2b] border-[#5a6180]"
+                      : "bg-[#1b1f2b] border-[#8b93b0]"
                     : "bg-[#1b1f2b] border-[#252a38]"
                 }`}
               />
             ))}
           </div>
-          <div className="font-mono text-[11px] text-[#5a6180] h-[18px] tracking-wider">{hint}</div>
+          <div className="font-mono text-[11px] text-[#8b93b0] h-[18px] tracking-wider">{hint}</div>
           <div className="w-[200px] h-0.5 bg-[#252a38] rounded-full">
             <div className="h-full bg-[#f5c842] rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
           </div>
@@ -450,14 +497,14 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
         <div className="flex flex-col items-center gap-2.5 px-6 py-10 animate-fadeIn">
           <div className="text-[52px] leading-none">{feedback.icon}</div>
           <div className="text-2xl font-bold tracking-tight" style={{ color: feedback.color }}>{feedback.title}</div>
-          <div className="font-mono text-xs text-[#5a6180]">{feedback.sub}</div>
+          <div className="font-mono text-xs text-[#8b93b0]">{feedback.sub}</div>
         </div>
       )}
 
       {/* Results */}
       {screen === "results" && scores && (
         <div className="flex flex-col items-center text-center px-6 py-16 overflow-y-auto max-h-screen animate-fadeIn">
-          <p className="font-mono text-[10px] tracking-[3px] uppercase text-[#5a6180] mb-4">Assessment complete</p>
+          <p className="font-mono text-[10px] tracking-[3px] uppercase text-[#8b93b0] mb-4">Assessment complete</p>
           <h2 className="text-[22px] font-bold tracking-tight mb-8">Your Focus Map</h2>
           <div className="flex gap-3.5 flex-wrap justify-center mb-7">
             <ScoreCard
@@ -482,7 +529,7 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
               desc="Reaction Time Variability"
             />
             <ScoreCard
-              accent="#5a6180"
+              accent="#8b93b0"
               value={String(scores.meanRT)}
               color="#dde3f0"
               name="Mean RT"
@@ -493,7 +540,7 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
           {/* Previous run comparison */}
           {history.length >= 2 && (
             <div className="w-full max-w-[420px] mb-5 p-4 bg-[#13161e] border border-[#252a38] rounded-xl">
-              <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#5a6180] mb-3">
+              <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#8b93b0] mb-3">
                 vs last attempt ({new Date(history[1].completedAt).toLocaleDateString()})
               </p>
               <div className="flex justify-center gap-6">
@@ -508,8 +555,8 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
                   const diff = curr - prev;
                   return (
                     <div key={label} className="text-center">
-                      <div className="font-mono text-[9px] text-[#5a6180] uppercase tracking-wider mb-1">{label}</div>
-                      <div className={`text-[13px] font-bold ${same ? "text-[#5a6180]" : improved ? "text-[#34d399]" : "text-[#f87171]"}`}>
+                      <div className="font-mono text-[9px] text-[#8b93b0] uppercase tracking-wider mb-1">{label}</div>
+                      <div className={`text-[13px] font-bold ${same ? "text-[#8b93b0]" : improved ? "text-[#34d399]" : "text-[#f87171]"}`}>
                         {same ? "—" : `${diff > 0 ? "+" : ""}${label === "ICV" || label === "RT ms" ? diff.toFixed(1) : diff}`}
                       </div>
                     </div>
@@ -521,19 +568,27 @@ export default function GoNoGoGame({ onComplete }: GoNoGoGameProps) {
 
           {/* History count */}
           {history.length > 1 && (
-            <p className="font-mono text-[10px] text-[#5a6180] mb-4">
+            <p className="font-mono text-[10px] text-[#8b93b0] mb-4">
               {history.length} attempts stored on this device
             </p>
           )}
 
-          <div className="font-mono text-[11px] text-[#5a6180] leading-relaxed max-w-[420px] p-4 border border-[#252a38] rounded-lg bg-[#13161e] mb-5">
+          <div className="font-mono text-[11px] text-[#8b93b0] leading-relaxed max-w-[420px] p-4 border border-[#252a38] rounded-lg bg-[#13161e] mb-5">
             AQvis &lt; 70 or ICV &gt; 35% may indicate attention difficulties.<br />
             These scores are for clinical screening only — not a diagnosis.<br />
             A clinician will review your full profile.
           </div>
-          <button onClick={restart} className="bg-transparent text-[#dde3f0] border border-[#252a38] font-bold text-[15px] px-12 py-4 rounded-lg hover:border-[#4f8ef7] hover:text-[#4f8ef7] transition-all">
-            Play Again
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3 items-center">
+            <button onClick={restart} className="bg-transparent text-[#dde3f0] border border-[#252a38] font-bold text-[15px] px-12 py-4 rounded-lg hover:border-[#4f8ef7] hover:text-[#4f8ef7] transition-all">
+              Play Again
+            </button>
+            <Link href="/assessment/chronos-task" className="bg-[#4f8ef7] text-white font-bold text-[15px] px-12 py-4 rounded-lg hover:bg-[#3b7ae0] transition-all text-center">
+              Next: Chronos Sort →
+            </Link>
+            <Link href="/assessment/focus-task" className="text-[#8b93b0] hover:text-[#dde3f0] font-medium text-[13px] transition-colors">
+              Back to Tasks
+            </Link>
+          </div>
         </div>
       )}
     </div>
@@ -551,8 +606,8 @@ function ScoreCard({ accent, value, color, name, desc }: {
     <div className="bg-[#1b1f2b] border border-[#252a38] rounded-xl py-5 px-6 min-w-[128px] text-center relative overflow-hidden">
       <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: accent }} />
       <div className="text-[38px] font-extrabold tracking-tight leading-none mb-1.5" style={{ color }}>{value}</div>
-      <div className="font-mono text-[10px] text-[#5a6180] tracking-[1.5px] uppercase">{name}</div>
-      <div className="font-mono text-[10px] text-[#5a6180] mt-1 leading-relaxed">{desc}</div>
+      <div className="font-mono text-[10px] text-[#8b93b0] tracking-[1.5px] uppercase">{name}</div>
+      <div className="font-mono text-[10px] text-[#8b93b0] mt-1 leading-relaxed">{desc}</div>
     </div>
   );
 }

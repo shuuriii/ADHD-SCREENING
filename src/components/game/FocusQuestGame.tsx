@@ -9,6 +9,9 @@ import {
   type FocusQuestScores,
 } from "@/lib/focus-quest-scoring";
 import { saveGameToBundle } from "@/lib/report-bundle";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import GamePauseOverlay from "./GamePauseOverlay";
 
 // ─── Config ────────────────────────────────────────────────────────────────
 
@@ -150,7 +153,9 @@ function getAXTrialType(prevEmoji: string | null, curEmoji: string): AXTrialType
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export default function FocusQuestGame({ onComplete }: Props) {
+  const router = useRouter();
   const [screen, setScreen] = useState<Screen>("welcome");
+  const [isPaused, setIsPaused] = useState(false);
   const [stimulus, setStimulus] = useState<Stimulus | null>(null);
   const [showStim, setShowStim] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackData | null>(null);
@@ -438,6 +443,41 @@ export default function FocusQuestGame({ onComplete }: Props) {
     setScreen("welcome");
   };
 
+  const handlePause = useCallback(() => {
+    clearTimers();
+    blockedRef.current = true;
+    setShowStim(false);
+    setStimulus(null);
+    setIsPaused(true);
+  }, [clearTimers]);
+
+  const handleResume = useCallback(() => {
+    setIsPaused(false);
+    blockedRef.current = false;
+    if (trialIdxRef.current > 0) trialIdxRef.current--;
+    const phase = phaseRef.current;
+    const isAX = phase === "ax-practice" || phase === "ax-test";
+    addTimer(isAX ? nextAXTrial : nextXTrial, 600);
+  }, [addTimer, nextAXTrial, nextXTrial]);
+
+  const handleQuit = useCallback(() => {
+    clearTimers();
+    router.push("/assessment/focus-task");
+  }, [clearTimers, router]);
+
+  // Escape key to toggle pause
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && screen === "game") {
+        e.preventDefault();
+        if (isPaused) handleResume();
+        else handlePause();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [screen, isPaused, handlePause, handleResume]);
+
   // ── Glow styles ───────────────────────────────────────────────────────────
 
   const glowColor: Record<string, string> = {
@@ -460,40 +500,50 @@ export default function FocusQuestGame({ onComplete }: Props) {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-[#0a1628] text-[#e0f2fe] flex items-center justify-center font-sans select-none">
+    <div className="fixed inset-0 z-10 bg-[#0a1628] text-[#e0f2fe] flex items-center justify-center font-sans select-none overflow-y-auto">
+
+      {screen === "game" && (
+        <GamePauseOverlay
+          isPaused={isPaused}
+          onResume={isPaused ? handleResume : handlePause}
+          onQuit={handleQuit}
+          accentColor="#38bdf8"
+          bgColor="#0a1628"
+        />
+      )}
 
       {/* Welcome */}
       {screen === "welcome" && (
         <div className="flex flex-col items-center text-center px-6 py-10 animate-fadeIn">
-          <p className="font-mono text-[10px] tracking-[3px] uppercase text-[#4a7fa5] mb-5">
+          <p className="font-mono text-[10px] tracking-[3px] uppercase text-[#6ba3c9] mb-5">
             FocusOS — Cognitive Assessment
           </p>
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-tight mb-3">
             <span className="text-[#38bdf8]">Focus Quest</span>
           </h1>
-          <p className="font-mono text-[13px] text-[#4a7fa5] leading-relaxed max-w-[400px] mb-9">
+          <p className="font-mono text-[13px] text-[#6ba3c9] leading-relaxed max-w-[400px] mb-9">
             A sea-world attention task used in clinical ADHD research.<br />
             Two phases — impulse control, then working memory.
           </p>
 
           <div className="flex gap-9 mb-8">
             <div>
-              <div className="text-[32px] font-extrabold">20<span className="text-base text-[#4a7fa5]">min</span></div>
-              <div className="font-mono text-[10px] text-[#4a7fa5] uppercase tracking-wider mt-1">Duration</div>
+              <div className="text-[32px] font-extrabold">20<span className="text-base text-[#6ba3c9]">min</span></div>
+              <div className="font-mono text-[10px] text-[#6ba3c9] uppercase tracking-wider mt-1">Duration</div>
             </div>
             <div>
               <div className="text-[32px] font-extrabold">140</div>
-              <div className="font-mono text-[10px] text-[#4a7fa5] uppercase tracking-wider mt-1">Trials</div>
+              <div className="font-mono text-[10px] text-[#6ba3c9] uppercase tracking-wider mt-1">Trials</div>
             </div>
             <div>
               <div className="text-[32px] font-extrabold">4</div>
-              <div className="font-mono text-[10px] text-[#4a7fa5] uppercase tracking-wider mt-1">Scores</div>
+              <div className="font-mono text-[10px] text-[#6ba3c9] uppercase tracking-wider mt-1">Scores</div>
             </div>
           </div>
 
           {lastEntry && (
             <div className="w-full max-w-[380px] mb-8 p-4 bg-[#0f2137] border border-[#1e3a5c] rounded-xl">
-              <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#4a7fa5] mb-3">
+              <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#6ba3c9] mb-3">
                 Last attempt — {new Date(lastEntry.completedAt).toLocaleDateString()}
               </p>
               <div className="flex justify-center gap-6">
@@ -507,7 +557,7 @@ export default function FocusQuestGame({ onComplete }: Props) {
                     <div className="text-[22px] font-extrabold" style={{ color: scoreColor(v, 50, 70) }}>
                       {v}
                     </div>
-                    <div className="font-mono text-[9px] text-[#4a7fa5] uppercase tracking-wider">{label}</div>
+                    <div className="font-mono text-[9px] text-[#6ba3c9] uppercase tracking-wider">{label}</div>
                   </div>
                 ))}
               </div>
@@ -520,6 +570,9 @@ export default function FocusQuestGame({ onComplete }: Props) {
           >
             {lastEntry ? "Play Again" : "Begin Assessment"}
           </button>
+          <p className="mt-6 font-mono text-[10px] text-[#6ba3c9] leading-relaxed max-w-[360px]">
+            Screening tool only — not a diagnosis. Not an FDA-approved diagnostic device. Share results with your doctor.
+          </p>
         </div>
       )}
 
@@ -534,19 +587,19 @@ export default function FocusQuestGame({ onComplete }: Props) {
                 <span className="text-xl">🌊</span>
                 <span className="font-bold text-[#38bdf8] text-[13px]">Phase 1 — X-Test (Impulse Control)</span>
               </div>
-              <div className="font-mono text-[11px] text-[#4a7fa5] leading-relaxed mb-2">
+              <div className="font-mono text-[11px] text-[#6ba3c9] leading-relaxed mb-2">
                 Sea creatures swim past one at a time.
               </div>
               <div className="flex gap-4 text-sm">
                 <div className="bg-[#0a1628] rounded-lg p-3 text-center flex-1">
                   <div className="text-2xl mb-1">🐟</div>
                   <div className="text-[#34d399] font-bold text-xs">TAP</div>
-                  <div className="font-mono text-[10px] text-[#4a7fa5]">any creature</div>
+                  <div className="font-mono text-[10px] text-[#6ba3c9]">any creature</div>
                 </div>
                 <div className="bg-[#0a1628] rounded-lg p-3 text-center flex-1">
                   <div className="text-2xl mb-1" style={{ filter: "drop-shadow(0 0 8px #f87171)" }}>🪼</div>
                   <div className="text-[#f87171] font-bold text-xs">HOLD</div>
-                  <div className="font-mono text-[10px] text-[#4a7fa5]">red jellyfish</div>
+                  <div className="font-mono text-[10px] text-[#6ba3c9]">red jellyfish</div>
                 </div>
               </div>
             </div>
@@ -556,7 +609,7 @@ export default function FocusQuestGame({ onComplete }: Props) {
                 <span className="text-xl">🧠</span>
                 <span className="font-bold text-[#f59e0b] text-[13px]">Phase 2 — AX-Test (Working Memory)</span>
               </div>
-              <div className="font-mono text-[11px] text-[#4a7fa5] leading-relaxed mb-2">
+              <div className="font-mono text-[11px] text-[#6ba3c9] leading-relaxed mb-2">
                 Now tap <em>only</em> when a coin 🪙 follows directly after a starfish ⭐.
               </div>
               <div className="flex gap-2 flex-wrap">
@@ -576,7 +629,7 @@ export default function FocusQuestGame({ onComplete }: Props) {
             </div>
           </div>
 
-          <p className="font-mono text-[11px] text-[#4a7fa5] leading-relaxed mb-8">
+          <p className="font-mono text-[11px] text-[#6ba3c9] leading-relaxed mb-8">
             <span className="text-[#e0f2fe]">Keyboard:</span> Spacebar to respond.{" "}
             <span className="text-[#e0f2fe]">Touch:</span> tap anywhere on the creature.
           </p>
@@ -599,7 +652,7 @@ export default function FocusQuestGame({ onComplete }: Props) {
           <h2 className="text-[22px] font-bold tracking-tight mb-7">
             10 practice trials<br />with feedback
           </h2>
-          <p className="font-mono text-[13px] text-[#4a7fa5] leading-relaxed max-w-[400px] mb-9">
+          <p className="font-mono text-[13px] text-[#6ba3c9] leading-relaxed max-w-[400px] mb-9">
             You&apos;ll see if each response was correct.<br />
             Feedback stops in the real task.
           </p>
@@ -621,11 +674,11 @@ export default function FocusQuestGame({ onComplete }: Props) {
           <h2 className="text-[22px] font-bold tracking-tight mb-7">
             Warm-up complete.<br />X-Test begins now.
           </h2>
-          <p className="font-mono text-[13px] text-[#4a7fa5] leading-relaxed max-w-[400px] mb-4">
+          <p className="font-mono text-[13px] text-[#6ba3c9] leading-relaxed max-w-[400px] mb-4">
             80 trials. No feedback shown.<br />
             TAP every creature — HOLD for the red jellyfish.
           </p>
-          <p className="font-mono text-[11px] text-[#4a7fa5] max-w-[400px] mb-9">
+          <p className="font-mono text-[11px] text-[#6ba3c9] max-w-[400px] mb-9">
             Stay focused — the task measures whether attention dips over time.
           </p>
           <button
@@ -646,14 +699,14 @@ export default function FocusQuestGame({ onComplete }: Props) {
           <h2 className="text-[22px] font-bold tracking-tight mb-4">
             ⭐ The rules have changed
           </h2>
-          <p className="font-mono text-[13px] text-[#4a7fa5] leading-relaxed max-w-[380px] mb-6">
+          <p className="font-mono text-[13px] text-[#6ba3c9] leading-relaxed max-w-[380px] mb-6">
             Now you must remember the <em>previous</em> creature.
           </p>
           <div className="bg-[#0f2137] border border-[#1e3a5c] rounded-xl p-5 mb-8 text-left w-full">
             <div className="font-mono text-[12px] text-[#e0f2fe] mb-3 font-bold">Only tap when:</div>
             <div className="text-[28px] mb-2">⭐ → 🪙</div>
-            <div className="font-mono text-[11px] text-[#4a7fa5]">Starfish followed immediately by a Gold Coin</div>
-            <div className="border-t border-[#1e3a5c] mt-4 pt-4 font-mono text-[11px] text-[#4a7fa5]">
+            <div className="font-mono text-[11px] text-[#6ba3c9]">Starfish followed immediately by a Gold Coin</div>
+            <div className="border-t border-[#1e3a5c] mt-4 pt-4 font-mono text-[11px] text-[#6ba3c9]">
               Any other sequence — hold still.
             </div>
           </div>
@@ -675,7 +728,7 @@ export default function FocusQuestGame({ onComplete }: Props) {
           <h2 className="text-[22px] font-bold tracking-tight mb-7">
             5 practice trials<br />to learn the sequence
           </h2>
-          <p className="font-mono text-[13px] text-[#4a7fa5] leading-relaxed max-w-[400px] mb-9">
+          <p className="font-mono text-[13px] text-[#6ba3c9] leading-relaxed max-w-[400px] mb-9">
             Feedback will show whether you tapped correctly.<br />
             Remember: only tap the 🪙 that follows ⭐.
           </p>
@@ -697,7 +750,7 @@ export default function FocusQuestGame({ onComplete }: Props) {
           <h2 className="text-[22px] font-bold tracking-tight mb-7">
             Practice complete.<br />AX-Test begins now.
           </h2>
-          <p className="font-mono text-[13px] text-[#4a7fa5] leading-relaxed max-w-[400px] mb-9">
+          <p className="font-mono text-[13px] text-[#6ba3c9] leading-relaxed max-w-[400px] mb-9">
             60 trials. No feedback.<br />
             Tap only ⭐ → 🪙. Stay focused.
           </p>
@@ -713,7 +766,7 @@ export default function FocusQuestGame({ onComplete }: Props) {
       {/* Game */}
       {screen === "game" && (
         <div className="flex flex-col items-center gap-8 px-6 py-10 w-full max-w-[400px] mx-auto">
-          <div className="font-mono text-[11px] text-[#4a7fa5] tracking-wider h-5">{trialLabel}</div>
+          <div className="font-mono text-[11px] text-[#6ba3c9] tracking-wider h-5">{trialLabel}</div>
 
           {/* Stimulus / Feedback area */}
           <div
@@ -760,14 +813,14 @@ export default function FocusQuestGame({ onComplete }: Props) {
             )}
           </div>
 
-          <p className="font-mono text-[10px] text-[#4a7fa5]">
+          <p className="font-mono text-[10px] text-[#6ba3c9]">
             Tap circle or press Spacebar to respond
           </p>
 
           {/* Dual progress bars */}
           <div className="w-full space-y-2">
             <div className="flex items-center gap-2">
-              <div className="font-mono text-[9px] text-[#4a7fa5] w-12 text-right shrink-0">X-Test</div>
+              <div className="font-mono text-[9px] text-[#6ba3c9] w-12 text-right shrink-0">X-Test</div>
               <div className="flex-1 h-0.5 bg-[#1e3a5c] rounded-full">
                 <div
                   className="h-full bg-[#38bdf8] rounded-full transition-all duration-300"
@@ -776,7 +829,7 @@ export default function FocusQuestGame({ onComplete }: Props) {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className="font-mono text-[9px] text-[#4a7fa5] w-12 text-right shrink-0">AX-Test</div>
+              <div className="font-mono text-[9px] text-[#6ba3c9] w-12 text-right shrink-0">AX-Test</div>
               <div className="flex-1 h-0.5 bg-[#1e3a5c] rounded-full">
                 <div
                   className="h-full bg-[#f59e0b] rounded-full transition-all duration-300"
@@ -791,7 +844,7 @@ export default function FocusQuestGame({ onComplete }: Props) {
       {/* Results */}
       {screen === "results" && scores && (
         <div className="flex flex-col items-center text-center px-6 py-16 overflow-y-auto max-h-screen animate-fadeIn">
-          <p className="font-mono text-[10px] tracking-[3px] uppercase text-[#4a7fa5] mb-4">
+          <p className="font-mono text-[10px] tracking-[3px] uppercase text-[#6ba3c9] mb-4">
             Assessment complete
           </p>
           <h2 className="text-[22px] font-bold tracking-tight mb-8">
@@ -808,7 +861,7 @@ export default function FocusQuestGame({ onComplete }: Props) {
 
           {/* X-Test details */}
           <div className="w-full max-w-[420px] mb-4 p-4 bg-[#0f2137] border border-[#1e3a5c] rounded-xl text-left">
-            <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#4a7fa5] mb-3">
+            <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#6ba3c9] mb-3">
               X-Test breakdown
             </p>
             <div className="grid grid-cols-3 gap-3">
@@ -822,7 +875,7 @@ export default function FocusQuestGame({ onComplete }: Props) {
               ].map(({ label, v, hint }) => (
                 <div key={label} className="text-center">
                   <div className="font-bold text-[15px] text-[#e0f2fe]">{v}</div>
-                  <div className="font-mono text-[8px] text-[#4a7fa5] uppercase">{label}</div>
+                  <div className="font-mono text-[8px] text-[#6ba3c9] uppercase">{label}</div>
                   <div className="font-mono text-[8px] text-[#2a5a7a]">{hint}</div>
                 </div>
               ))}
@@ -831,7 +884,7 @@ export default function FocusQuestGame({ onComplete }: Props) {
 
           {history.length >= 2 && (
             <div className="w-full max-w-[420px] mb-4 p-4 bg-[#0f2137] border border-[#1e3a5c] rounded-xl">
-              <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#4a7fa5] mb-3">
+              <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#6ba3c9] mb-3">
                 vs last attempt ({new Date(history[1].completedAt).toLocaleDateString()})
               </p>
               <div className="flex justify-center gap-6">
@@ -844,8 +897,8 @@ export default function FocusQuestGame({ onComplete }: Props) {
                   const diff = curr - prev;
                   return (
                     <div key={label} className="text-center">
-                      <div className="font-mono text-[9px] text-[#4a7fa5] uppercase tracking-wider mb-1">{label}</div>
-                      <div className={`text-[13px] font-bold ${diff === 0 ? "text-[#4a7fa5]" : diff > 0 ? "text-[#34d399]" : "text-[#f87171]"}`}>
+                      <div className="font-mono text-[9px] text-[#6ba3c9] uppercase tracking-wider mb-1">{label}</div>
+                      <div className={`text-[13px] font-bold ${diff === 0 ? "text-[#6ba3c9]" : diff > 0 ? "text-[#34d399]" : "text-[#f87171]"}`}>
                         {diff === 0 ? "—" : `${diff > 0 ? "+" : ""}${diff}`}
                       </div>
                     </div>
@@ -855,18 +908,26 @@ export default function FocusQuestGame({ onComplete }: Props) {
             </div>
           )}
 
-          <div className="font-mono text-[11px] text-[#4a7fa5] leading-relaxed max-w-[420px] p-4 border border-[#1e3a5c] rounded-lg bg-[#0f2137] mb-5">
+          <div className="font-mono text-[11px] text-[#6ba3c9] leading-relaxed max-w-[420px] p-4 border border-[#1e3a5c] rounded-lg bg-[#0f2137] mb-5">
             CPT-X {"<"} 50 may indicate impulse control difficulties.<br />
             High BX errors ({scores.bxErrors}) suggest working memory + impulsivity overlap.<br />
             These scores are for screening only — not a diagnosis.
           </div>
 
-          <button
-            onClick={restart}
-            className="bg-transparent text-[#e0f2fe] border border-[#1e3a5c] font-bold text-[15px] px-12 py-4 rounded-lg hover:border-[#38bdf8] hover:text-[#38bdf8] transition-all"
-          >
-            Play Again
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3 items-center">
+            <button
+              onClick={restart}
+              className="bg-transparent text-[#e0f2fe] border border-[#1e3a5c] font-bold text-[15px] px-12 py-4 rounded-lg hover:border-[#38bdf8] hover:text-[#38bdf8] transition-all"
+            >
+              Play Again
+            </button>
+            <Link href="/assessment/my-report" className="bg-[#38bdf8] text-[#0a1628] font-bold text-[15px] px-12 py-4 rounded-lg hover:bg-[#22a5e0] transition-all text-center">
+              View Full Report →
+            </Link>
+            <Link href="/assessment/focus-task" className="text-[#6ba3c9] hover:text-[#e0f2fe] font-medium text-[13px] transition-colors">
+              Back to Tasks
+            </Link>
+          </div>
         </div>
       )}
     </div>
@@ -880,8 +941,8 @@ function ScoreCard({ accent, value, color, name, desc }: {
     <div className="bg-[#0f2137] border border-[#1e3a5c] rounded-xl py-5 px-6 min-w-[120px] text-center relative overflow-hidden">
       <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: accent }} />
       <div className="text-[36px] font-extrabold tracking-tight leading-none mb-1.5" style={{ color }}>{value}</div>
-      <div className="font-mono text-[10px] text-[#4a7fa5] tracking-[1.5px] uppercase">{name}</div>
-      <div className="font-mono text-[10px] text-[#4a7fa5] mt-1 leading-relaxed">{desc}</div>
+      <div className="font-mono text-[10px] text-[#6ba3c9] tracking-[1.5px] uppercase">{name}</div>
+      <div className="font-mono text-[10px] text-[#6ba3c9] mt-1 leading-relaxed">{desc}</div>
     </div>
   );
 }

@@ -7,10 +7,11 @@ import { useAssessment } from "@/contexts/AssessmentContext";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { Mail } from "lucide-react";
+import Link from "next/link";
 import type { Gender, PetPreference } from "@/questionnaire/types";
-import { saveSession } from "@/lib/supabase/sessions";
 import { createClient, supabaseConfigured } from "@/lib/supabase/client";
 import { initBundle } from "@/lib/report-bundle";
+import { saveSessionViaAPI } from "@/lib/api-client";
 import type { User } from "@supabase/supabase-js";
 
 export default function IntakePage() {
@@ -21,6 +22,7 @@ export default function IntakePage() {
   const [age, setAge] = useState("");
   const [email, setEmail] = useState("");
   const [petPreference, setPetPreference] = useState<PetPreference | null>(null);
+  const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [user, setUser] = useState<User | null>(null);
 
@@ -43,9 +45,10 @@ export default function IntakePage() {
     e.preventDefault();
     const newErrors: string[] = [];
 
+    if (!consent) newErrors.push("Please agree to the Privacy Policy and Terms of Service");
     if (!gender) newErrors.push("Please select your gender");
-    if (!age || parseInt(age) < 18)
-      newErrors.push("Age must be 18 or older");
+    if (!age || parseInt(age) < 18 || parseInt(age) > 120)
+      newErrors.push("Age must be between 18 and 120");
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       newErrors.push("Please enter a valid email address");
 
@@ -54,7 +57,9 @@ export default function IntakePage() {
       return;
     }
 
-    const resolvedName = name.trim() || "Anonymous";
+    // Sanitize text inputs to prevent XSS in rendered output
+    const resolvedName = name.trim().replace(/[<>&"']/g, "") || "Anonymous";
+    const sanitizedEmail = email.trim().replace(/[<>&"']/g, "");
 
     // Get or create a persistent session ID for this user
     let sessionId = localStorage.getItem("fayth-session-id");
@@ -70,7 +75,7 @@ export default function IntakePage() {
         gender: gender as Gender,
         age: parseInt(age),
         petPreference: petPreference,
-        email: email.trim() || undefined,
+        email: sanitizedEmail || undefined,
       },
     });
 
@@ -80,21 +85,15 @@ export default function IntakePage() {
       sessionId
     );
 
-    // Save session to Supabase (fire-and-forget)
-    if (supabaseConfigured) {
-      createClient().auth.getUser().then(({ data }) => {
-        saveSession(
-          parseInt(age),
-          gender as Gender,
-          petPreference,
-          "dsm5",
-          sessionId,
-          data.user?.id ?? null,
-          resolvedName,
-          email.trim() || null
-        );
-      });
-    }
+    // Save session via server-side API (fire-and-forget)
+    saveSessionViaAPI({
+      sessionId,
+      age: parseInt(age),
+      gender: gender as Gender,
+      petPreference,
+      instrument: "dsm5",
+      name: resolvedName,
+    });
 
     dispatch({ type: "SET_INSTRUMENT", payload: "dsm5" });
     router.push("/assessment/questionnaire");
@@ -153,7 +152,7 @@ export default function IntakePage() {
             <p className="text-xs text-muted mb-3">
               ADHD presents differently across genders — helps us tailor your results.
             </p>
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-4 gap-3" role="radiogroup" aria-label="Gender selection">
               {(
                 [
                   { id: "female",            emoji: "🌸", label: "Female"     },
@@ -165,6 +164,8 @@ export default function IntakePage() {
                 <button
                   key={g.id}
                   type="button"
+                  role="radio"
+                  aria-checked={gender === g.id}
                   onClick={() => setGender(g.id)}
                   className={`relative flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all ${
                     gender === g.id
@@ -179,6 +180,50 @@ export default function IntakePage() {
                     {g.label}
                   </span>
                   {gender === g.id && (
+                    <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-primary-500 flex items-center justify-center text-white text-[9px]">
+                      ✓
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-0.5">
+              Choose your companion
+            </label>
+            <p className="text-xs text-muted mb-3">
+              A friendly avatar to keep you company through the assessment.
+            </p>
+            <div className="grid grid-cols-4 gap-3" role="radiogroup" aria-label="Companion selection">
+              {(
+                [
+                  { id: "fox",   emoji: "🦊", label: "Fox"   },
+                  { id: "panda", emoji: "🐼", label: "Panda" },
+                  { id: "frog",  emoji: "🐸", label: "Frog"  },
+                  { id: "bunny", emoji: "🐰", label: "Bunny" },
+                ] as { id: PetPreference; emoji: string; label: string }[]
+              ).map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={petPreference === p.id}
+                  onClick={() => setPetPreference(p.id)}
+                  className={`relative flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all ${
+                    petPreference === p.id
+                      ? "border-primary-500 bg-primary-50 ring-1 ring-primary-500"
+                      : "border-border bg-white hover:border-primary-300"
+                  }`}
+                >
+                  <div className="w-14 h-14 rounded-full bg-primary-50 border border-border/60 flex items-center justify-center text-3xl shadow-sm">
+                    {p.emoji}
+                  </div>
+                  <span className="text-xs font-medium text-muted text-center leading-tight">
+                    {p.label}
+                  </span>
+                  {petPreference === p.id && (
                     <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-primary-500 flex items-center justify-center text-white text-[9px]">
                       ✓
                     </span>
@@ -228,6 +273,25 @@ export default function IntakePage() {
               </div>
             </div>
           )}
+
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800 leading-relaxed">
+            This is a screening tool, not a diagnosis. Only a qualified healthcare professional can
+            diagnose ADHD. Please share your results with your doctor for proper evaluation.
+          </div>
+
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-border text-primary-500 focus:ring-primary-500"
+            />
+            <span className="text-xs text-muted leading-relaxed">
+              I understand this is a screening tool and not a diagnosis. I agree to the{" "}
+              <Link href="/privacy" target="_blank" className="text-primary-600 underline">Privacy Policy</Link> and{" "}
+              <Link href="/terms" target="_blank" className="text-primary-600 underline">Terms of Service</Link>.
+            </span>
+          </label>
 
           <Button type="submit" className="w-full" size="lg">
             Continue to Assessment

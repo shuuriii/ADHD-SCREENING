@@ -11,10 +11,3 @@ export {
   determineFollowUps,
   getSeverity,
 } from "./scoring";
-export { asrsQuestions, ASRS_PART_A_HIGH_RISK_THRESHOLD } from "./asrs-questions";
-export {
-  calculateASRSScores,
-  determineASRSPresentation,
-  interpretASRSResults,
-  evaluateASRSCriteria,
-} from "./asrs-scoring";

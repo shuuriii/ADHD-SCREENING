@@ -7,6 +7,9 @@ import {
   type ChronosScores,
 } from "@/lib/chronos-scoring";
 import { saveGameToBundle } from "@/lib/report-bundle";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import GamePauseOverlay from "./GamePauseOverlay";
 
 const CFG = {
   PRACTICE: 8,
@@ -74,7 +77,9 @@ function saveHistory(scores: ChronosScores) {
 }
 
 export default function ChronosSortGame({ onComplete }: Props) {
+  const router = useRouter();
   const [screen, setScreen] = useState<Screen>("welcome");
+  const [isPaused, setIsPaused] = useState(false);
   const [heldItem, setHeldItem] = useState<HeldItem | null>(null);
   const [isHolding, setIsHolding] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
@@ -288,6 +293,40 @@ export default function ChronosSortGame({ onComplete }: Props) {
     setScreen("welcome");
   };
 
+  const handlePause = useCallback(() => {
+    clearTimers();
+    isHoldingRef.current = false;
+    stateRef.current = "idle";
+    setIsHolding(false);
+    setIsPaused(true);
+  }, [clearTimers]);
+
+  const handleResume = useCallback(() => {
+    setIsPaused(false);
+    if (trialIdxRef.current > 0) trialIdxRef.current--;
+    setFeedback(null);
+    setHeldItem(null);
+    addTimer(spawnItem, 600);
+  }, [addTimer, spawnItem]);
+
+  const handleQuit = useCallback(() => {
+    clearTimers();
+    router.push("/assessment/focus-task");
+  }, [clearTimers, router]);
+
+  // Escape key to toggle pause
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && screen === "game") {
+        e.preventDefault();
+        if (isPaused) handleResume();
+        else handlePause();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [screen, isPaused, handlePause, handleResume]);
+
   const itemColor =
     heldItem?.type === "quick"
       ? "#00d4c8"
@@ -320,41 +359,51 @@ export default function ChronosSortGame({ onComplete }: Props) {
       };
 
   return (
-    <div className="min-h-screen bg-[#0d0f14] text-[#dde3f0] flex items-center justify-center font-sans">
+    <div className="fixed inset-0 z-10 bg-[#0d0f14] text-[#dde3f0] flex items-center justify-center font-sans overflow-y-auto" role="application" aria-label="Chronos Sort time estimation game. Hold the button or spacebar to charge items, then release.">
+
+      {screen === "game" && (
+        <GamePauseOverlay
+          isPaused={isPaused}
+          onResume={isPaused ? handleResume : handlePause}
+          onQuit={handleQuit}
+          accentColor="#00d4c8"
+          bgColor="#0d0f14"
+        />
+      )}
 
       {/* Welcome */}
       {screen === "welcome" && (
         <div className="flex flex-col items-center text-center px-6 py-10 animate-fadeIn">
-          <p className="font-mono text-[10px] tracking-[3px] uppercase text-[#5a6180] mb-5">
+          <p className="font-mono text-[10px] tracking-[3px] uppercase text-[#8b93b0] mb-5">
             FocusOS — Cognitive Assessment
           </p>
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-tight mb-3">
             The<br /><span className="text-[#00d4c8]">Chronos Sort</span>
           </h1>
-          <p className="font-mono text-[13px] text-[#5a6180] leading-relaxed max-w-[400px] mb-9">
+          <p className="font-mono text-[13px] text-[#8b93b0] leading-relaxed max-w-[400px] mb-9">
             A time estimation task measuring time blindness.<br />
             Hold. Release. Trust your internal clock — no timer shown.
           </p>
           <div className="flex gap-9 mb-8">
             <div>
               <div className="text-[32px] font-extrabold tracking-tight">
-                5<span className="text-base text-[#5a6180]">min</span>
+                5<span className="text-base text-[#8b93b0]">min</span>
               </div>
-              <div className="font-mono text-[10px] text-[#5a6180] uppercase tracking-wider mt-1">Duration</div>
+              <div className="font-mono text-[10px] text-[#8b93b0] uppercase tracking-wider mt-1">Duration</div>
             </div>
             <div>
               <div className="text-[32px] font-extrabold tracking-tight">40</div>
-              <div className="font-mono text-[10px] text-[#5a6180] uppercase tracking-wider mt-1">Trials</div>
+              <div className="font-mono text-[10px] text-[#8b93b0] uppercase tracking-wider mt-1">Trials</div>
             </div>
             <div>
               <div className="text-[32px] font-extrabold tracking-tight">3</div>
-              <div className="font-mono text-[10px] text-[#5a6180] uppercase tracking-wider mt-1">Scores</div>
+              <div className="font-mono text-[10px] text-[#8b93b0] uppercase tracking-wider mt-1">Scores</div>
             </div>
           </div>
 
           {lastEntry && (
             <div className="w-full max-w-[380px] mb-8 p-4 bg-[#13161e] border border-[#252a38] rounded-xl">
-              <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#5a6180] mb-3">
+              <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#8b93b0] mb-3">
                 Last attempt — {new Date(lastEntry.completedAt).toLocaleDateString()}
               </p>
               <div className="flex justify-center gap-6">
@@ -362,19 +411,19 @@ export default function ChronosSortGame({ onComplete }: Props) {
                   <div className="text-[22px] font-extrabold" style={{ color: scoreColor(lastEntry.scores.cIM, 50, 70) }}>
                     {lastEntry.scores.cIM}
                   </div>
-                  <div className="font-mono text-[9px] text-[#5a6180] uppercase tracking-wider">cIM</div>
+                  <div className="font-mono text-[9px] text-[#8b93b0] uppercase tracking-wider">cIM</div>
                 </div>
                 <div className="text-center">
                   <div className="text-[22px] font-extrabold" style={{ color: scoreColor(lastEntry.scores.cHR, 60, 80) }}>
                     {lastEntry.scores.cHR}
                   </div>
-                  <div className="font-mono text-[9px] text-[#5a6180] uppercase tracking-wider">cHR</div>
+                  <div className="font-mono text-[9px] text-[#8b93b0] uppercase tracking-wider">cHR</div>
                 </div>
                 <div className="text-center">
                   <div className="text-[22px] font-extrabold" style={{ color: scoreColor(lastEntry.scores.cIE, 40, 60) }}>
                     {lastEntry.scores.cIE}
                   </div>
-                  <div className="font-mono text-[9px] text-[#5a6180] uppercase tracking-wider">cIE</div>
+                  <div className="font-mono text-[9px] text-[#8b93b0] uppercase tracking-wider">cIE</div>
                 </div>
               </div>
             </div>
@@ -386,6 +435,9 @@ export default function ChronosSortGame({ onComplete }: Props) {
           >
             {lastEntry ? "Play Again" : "Begin Assessment"}
           </button>
+          <p className="mt-6 font-mono text-[10px] text-[#8b93b0] leading-relaxed max-w-[360px]">
+            Screening tool only — not a diagnosis. Not an FDA-approved diagnostic device. Share results with your doctor.
+          </p>
         </div>
       )}
 
@@ -397,30 +449,30 @@ export default function ChronosSortGame({ onComplete }: Props) {
             <div className="bg-[#1b1f2b] border border-[#252a38] rounded-xl p-5 w-[148px]">
               <div className="text-3xl mb-3">⚡</div>
               <div className="text-[14px] font-bold text-[#00d4c8] mb-1.5">QUICK</div>
-              <div className="font-mono text-[10px] text-[#5a6180] leading-relaxed">Shorter hold time. Release sooner.</div>
+              <div className="font-mono text-[10px] text-[#8b93b0] leading-relaxed">Shorter hold time. Release sooner.</div>
             </div>
             <div className="bg-[#1b1f2b] border border-[#252a38] rounded-xl p-5 w-[148px]">
               <div className="text-3xl mb-3">🕐</div>
               <div className="text-[14px] font-bold text-[#f59e0b] mb-1.5">SLOW</div>
-              <div className="font-mono text-[10px] text-[#5a6180] leading-relaxed">Longer hold time. Wait longer.</div>
+              <div className="font-mono text-[10px] text-[#8b93b0] leading-relaxed">Longer hold time. Wait longer.</div>
             </div>
           </div>
           <div className="flex flex-col gap-3 mb-8 text-left w-full">
             <div className="bg-[#13161e] border border-[#252a38] rounded-xl p-4">
               <div className="text-[#00d4c8] font-bold text-[13px] mb-1">Press and hold</div>
-              <div className="font-mono text-[11px] text-[#5a6180] leading-relaxed">
+              <div className="font-mono text-[11px] text-[#8b93b0] leading-relaxed">
                 Hold the HOLD button (or spacebar) until you feel the item is charged, then release.
               </div>
             </div>
             <div className="bg-[#13161e] border border-[#252a38] rounded-xl p-4">
               <div className="text-[#f59e0b] font-bold text-[13px] mb-1">No timer shown</div>
-              <div className="font-mono text-[11px] text-[#5a6180] leading-relaxed">
+              <div className="font-mono text-[11px] text-[#8b93b0] leading-relaxed">
                 There is no visible clock. Use your internal sense of time only.
               </div>
             </div>
             <div className="bg-[#13161e] border border-[#252a38] rounded-xl p-4">
               <div className="text-[#f5c842] font-bold text-[13px] mb-1">Rules change halfway</div>
-              <div className="font-mono text-[11px] text-[#5a6180] leading-relaxed">
+              <div className="font-mono text-[11px] text-[#8b93b0] leading-relaxed">
                 After 20 real trials, the required hold times shift. Recalibrate.
               </div>
             </div>
@@ -443,7 +495,7 @@ export default function ChronosSortGame({ onComplete }: Props) {
           <h2 className="text-[22px] font-bold tracking-tight mb-7">
             8 practice trials<br />with detailed feedback
           </h2>
-          <p className="font-mono text-[13px] text-[#5a6180] leading-relaxed max-w-[400px] mb-9">
+          <p className="font-mono text-[13px] text-[#8b93b0] leading-relaxed max-w-[400px] mb-9">
             You&apos;ll see exactly how far off your timing was.<br />
             Use this to calibrate your internal clock.
           </p>
@@ -459,7 +511,7 @@ export default function ChronosSortGame({ onComplete }: Props) {
       {/* Game */}
       {screen === "game" && (
         <div className="flex flex-col items-center gap-8 px-6 py-10 w-full max-w-[400px] mx-auto">
-          <div className="font-mono text-[11px] text-[#5a6180] tracking-wider h-5">
+          <div className="font-mono text-[11px] text-[#8b93b0] tracking-wider h-5">
             {trialLabel}
           </div>
 
@@ -471,7 +523,7 @@ export default function ChronosSortGame({ onComplete }: Props) {
                   {feedback.label}
                 </div>
                 {feedback.sub && (
-                  <div className="font-mono text-sm text-[#5a6180]">{feedback.sub}</div>
+                  <div className="font-mono text-sm text-[#8b93b0]">{feedback.sub}</div>
                 )}
               </div>
             ) : heldItem ? (
@@ -488,7 +540,7 @@ export default function ChronosSortGame({ onComplete }: Props) {
                 >
                   {heldItem.type.toUpperCase()}
                 </div>
-                <div className="font-mono text-[11px] text-[#5a6180]">
+                <div className="font-mono text-[11px] text-[#8b93b0]">
                   {isHolding ? "charging..." : "hold the button below"}
                 </div>
               </div>
@@ -522,7 +574,7 @@ export default function ChronosSortGame({ onComplete }: Props) {
                 isHolding
                   ? "#0d0f14"
                   : !heldItem || feedback
-                    ? "#5a6180"
+                    ? "#8b93b0"
                     : "#dde3f0",
               border: `2px solid ${
                 isHolding
@@ -538,7 +590,7 @@ export default function ChronosSortGame({ onComplete }: Props) {
             {isHolding ? "CHARGING..." : "HOLD"}
           </button>
 
-          <p className="font-mono text-[10px] text-[#5a6180]">
+          <p className="font-mono text-[10px] text-[#8b93b0]">
             Spacebar also works
           </p>
 
@@ -561,11 +613,11 @@ export default function ChronosSortGame({ onComplete }: Props) {
           <h2 className="text-[22px] font-bold tracking-tight mb-7">
             Practice complete.<br />Real task begins now.
           </h2>
-          <p className="font-mono text-[13px] text-[#5a6180] leading-relaxed max-w-[400px] mb-4">
+          <p className="font-mono text-[13px] text-[#8b93b0] leading-relaxed max-w-[400px] mb-4">
             20 trials. Minimal feedback shown.<br />
             Hold times are the same as practice.
           </p>
-          <p className="font-mono text-[11px] text-[#5a6180] leading-relaxed max-w-[400px] mb-9">
+          <p className="font-mono text-[11px] text-[#8b93b0] leading-relaxed max-w-[400px] mb-9">
             <span className="text-[#dde3f0]">Remember:</span> ⚡ QUICK = shorter hold — 🕐 SLOW = longer hold.
           </p>
           <button
@@ -586,7 +638,7 @@ export default function ChronosSortGame({ onComplete }: Props) {
           <h2 className="text-[22px] font-bold tracking-tight mb-4">
             ⚠ The timing has changed
           </h2>
-          <p className="font-mono text-[13px] text-[#5a6180] leading-relaxed max-w-[380px] mb-8">
+          <p className="font-mono text-[13px] text-[#8b93b0] leading-relaxed max-w-[380px] mb-8">
             The required hold times have shifted for the next 20 trials.
             Both QUICK and SLOW now require{" "}
             <span className="text-[#dde3f0]">different durations</span>.
@@ -594,14 +646,14 @@ export default function ChronosSortGame({ onComplete }: Props) {
           <div className="flex gap-4 mb-8">
             <div className="bg-[#13161e] border border-[#252a38] rounded-xl p-4 text-center w-[140px]">
               <div className="text-[#00d4c8] font-bold text-[13px] mb-1">⚡ QUICK</div>
-              <div className="font-mono text-[10px] text-[#5a6180]">Shorter than before</div>
+              <div className="font-mono text-[10px] text-[#8b93b0]">Shorter than before</div>
             </div>
             <div className="bg-[#13161e] border border-[#252a38] rounded-xl p-4 text-center w-[140px]">
               <div className="text-[#f59e0b] font-bold text-[13px] mb-1">🕐 SLOW</div>
-              <div className="font-mono text-[10px] text-[#5a6180]">Shorter than before</div>
+              <div className="font-mono text-[10px] text-[#8b93b0]">Shorter than before</div>
             </div>
           </div>
-          <p className="font-mono text-[12px] text-[#5a6180] leading-relaxed mb-9">
+          <p className="font-mono text-[12px] text-[#8b93b0] leading-relaxed mb-9">
             Recalibrate your sense of time.<br />
             <span className="text-[#dde3f0]">Trust your instincts.</span>
           </p>
@@ -617,7 +669,7 @@ export default function ChronosSortGame({ onComplete }: Props) {
       {/* Results */}
       {screen === "results" && scores && (
         <div className="flex flex-col items-center text-center px-6 py-16 overflow-y-auto max-h-screen animate-fadeIn">
-          <p className="font-mono text-[10px] tracking-[3px] uppercase text-[#5a6180] mb-4">
+          <p className="font-mono text-[10px] tracking-[3px] uppercase text-[#8b93b0] mb-4">
             Assessment complete
           </p>
           <h2 className="text-[22px] font-bold tracking-tight mb-8">
@@ -647,7 +699,7 @@ export default function ChronosSortGame({ onComplete }: Props) {
               desc="Adaptation Index"
             />
             <ScoreCard
-              accent="#5a6180"
+              accent="#8b93b0"
               value={`${scores.meanErrorPct}%`}
               color="#dde3f0"
               name="Avg Error"
@@ -657,21 +709,21 @@ export default function ChronosSortGame({ onComplete }: Props) {
 
           {/* Phase comparison */}
           <div className="w-full max-w-[420px] mb-5 p-4 bg-[#13161e] border border-[#252a38] rounded-xl">
-            <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#5a6180] mb-3">
+            <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#8b93b0] mb-3">
               Adaptation to rule change
             </p>
             <div className="flex justify-center gap-8 mb-3">
               <div className="text-center">
-                <div className="font-mono text-[9px] text-[#5a6180] uppercase tracking-wider mb-1">
+                <div className="font-mono text-[9px] text-[#8b93b0] uppercase tracking-wider mb-1">
                   Phase 1 Error
                 </div>
                 <div className="text-[18px] font-bold text-[#dde3f0]">
                   {scores.phase1MeanError}%
                 </div>
               </div>
-              <div className="text-[#5a6180] flex items-center">→</div>
+              <div className="text-[#8b93b0] flex items-center">→</div>
               <div className="text-center">
-                <div className="font-mono text-[9px] text-[#5a6180] uppercase tracking-wider mb-1">
+                <div className="font-mono text-[9px] text-[#8b93b0] uppercase tracking-wider mb-1">
                   Phase 2 Error
                 </div>
                 <div
@@ -704,7 +756,7 @@ export default function ChronosSortGame({ onComplete }: Props) {
 
           {history.length >= 2 && (
             <div className="w-full max-w-[420px] mb-5 p-4 bg-[#13161e] border border-[#252a38] rounded-xl">
-              <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#5a6180] mb-3">
+              <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#8b93b0] mb-3">
                 vs last attempt ({new Date(history[1].completedAt).toLocaleDateString()})
               </p>
               <div className="flex justify-center gap-6">
@@ -716,13 +768,13 @@ export default function ChronosSortGame({ onComplete }: Props) {
                   const diff = curr - prev;
                   return (
                     <div key={label} className="text-center">
-                      <div className="font-mono text-[9px] text-[#5a6180] uppercase tracking-wider mb-1">
+                      <div className="font-mono text-[9px] text-[#8b93b0] uppercase tracking-wider mb-1">
                         {label}
                       </div>
                       <div
                         className={`text-[13px] font-bold ${
                           diff === 0
-                            ? "text-[#5a6180]"
+                            ? "text-[#8b93b0]"
                             : diff > 0
                               ? "text-[#34d399]"
                               : "text-[#f87171]"
@@ -737,18 +789,26 @@ export default function ChronosSortGame({ onComplete }: Props) {
             </div>
           )}
 
-          <div className="font-mono text-[11px] text-[#5a6180] leading-relaxed max-w-[420px] p-4 border border-[#252a38] rounded-lg bg-[#13161e] mb-5">
+          <div className="font-mono text-[11px] text-[#8b93b0] leading-relaxed max-w-[420px] p-4 border border-[#252a38] rounded-lg bg-[#13161e] mb-5">
             Time blindness is strongly linked to inattentive ADHD.<br />
             cIM {"<"} 50 or high premature release rate may indicate temporal processing differences.<br />
             These scores are for screening only — not a diagnosis.
           </div>
 
-          <button
-            onClick={restart}
-            className="bg-transparent text-[#dde3f0] border border-[#252a38] font-bold text-[15px] px-12 py-4 rounded-lg hover:border-[#00d4c8] hover:text-[#00d4c8] transition-all"
-          >
-            Play Again
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3 items-center">
+            <button
+              onClick={restart}
+              className="bg-transparent text-[#dde3f0] border border-[#252a38] font-bold text-[15px] px-12 py-4 rounded-lg hover:border-[#00d4c8] hover:text-[#00d4c8] transition-all"
+            >
+              Play Again
+            </button>
+            <Link href="/assessment/focus-quest" className="bg-[#00d4c8] text-[#0d0f14] font-bold text-[15px] px-12 py-4 rounded-lg hover:bg-[#00bfb5] transition-all text-center">
+              Next: Focus Quest →
+            </Link>
+            <Link href="/assessment/focus-task" className="text-[#8b93b0] hover:text-[#dde3f0] font-medium text-[13px] transition-colors">
+              Back to Tasks
+            </Link>
+          </div>
         </div>
       )}
     </div>
@@ -777,10 +837,10 @@ function ScoreCard({
       >
         {value}
       </div>
-      <div className="font-mono text-[10px] text-[#5a6180] tracking-[1.5px] uppercase">
+      <div className="font-mono text-[10px] text-[#8b93b0] tracking-[1.5px] uppercase">
         {name}
       </div>
-      <div className="font-mono text-[10px] text-[#5a6180] mt-1 leading-relaxed">
+      <div className="font-mono text-[10px] text-[#8b93b0] mt-1 leading-relaxed">
         {desc}
       </div>
     </div>

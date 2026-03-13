@@ -5,13 +5,13 @@ import {
   useContext,
   useReducer,
   useEffect,
+  useCallback,
   type ReactNode,
 } from "react";
 import type {
   LikertValue,
   UserData,
   AssessmentResult,
-  ASRSResult,
   FollowUpQuestion,
   InstrumentType,
 } from "@/questionnaire/types";
@@ -22,6 +22,7 @@ import {
   interpretDSM5Results,
   determineFollowUps,
 } from "@/questionnaire/scoring";
+import { secureStorage } from "@/lib/client-crypto";
 
 type Phase = "intake" | "main" | "context" | "followups" | "results";
 
@@ -35,7 +36,7 @@ interface AssessmentState {
   currentQuestionIndex: number;
   followUpQuestions: FollowUpQuestion[];
   results: AssessmentResult | null;
-  asrsResult: ASRSResult | null;
+  asrsResult: null;
 }
 
 type Action =
@@ -135,26 +136,32 @@ const HISTORY_KEY = "adhd-assessment-history";
 export function AssessmentProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  // Hydrate from sessionStorage on mount
+  // Hydrate from sessionStorage on mount (async due to encryption)
   useEffect(() => {
-    try {
-      const saved = sessionStorage.getItem(SESSION_KEY);
-      if (saved) {
-        dispatch({ type: "HYDRATE", payload: JSON.parse(saved) });
+    (async () => {
+      try {
+        const saved = await secureStorage.getItem(sessionStorage, SESSION_KEY);
+        if (saved) {
+          dispatch({ type: "HYDRATE", payload: JSON.parse(saved) });
+        }
+      } catch (e) {
+        console.warn("[AssessmentContext] hydrate failed:", e);
       }
-    } catch {
-      // sessionStorage unavailable
+    })();
+  }, []);
+
+  // Persist to sessionStorage on state change (async due to encryption)
+  const persistState = useCallback(async (s: AssessmentState) => {
+    try {
+      await secureStorage.setItem(sessionStorage, SESSION_KEY, JSON.stringify(s));
+    } catch (e) {
+      console.warn("[AssessmentContext] persist failed:", e);
     }
   }, []);
 
-  // Persist to sessionStorage on state change
   useEffect(() => {
-    try {
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(state));
-    } catch {
-      // sessionStorage unavailable
-    }
-  }, [state]);
+    persistState(state);
+  }, [state, persistState]);
 
   const computeFollowUps = () => {
     const followUps = determineFollowUps(state.responses, state.userData.gender);
@@ -191,11 +198,9 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
     };
 
     dispatch({ type: "SET_RESULTS", payload: result });
-    // Persist synchronously so sessionStorage is up-to-date before router.push
-    try {
-      const next = { ...state, results: result, currentPhase: "results" as const };
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(next));
-    } catch { /* noop */ }
+    // Persist so sessionStorage is up-to-date before router.push
+    const next = { ...state, results: result, currentPhase: "results" as const };
+    secureStorage.setItem(sessionStorage, SESSION_KEY, JSON.stringify(next)).catch(() => {});
     saveToHistory(result);
   };
 
@@ -208,16 +213,16 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
   );
 }
 
-function saveToHistory(result: AssessmentResult | ASRSResult) {
+async function saveToHistory(result: AssessmentResult) {
   try {
-    const historyRaw = localStorage.getItem(HISTORY_KEY);
-    const history: (AssessmentResult | ASRSResult)[] = historyRaw
+    const historyRaw = await secureStorage.getItem(localStorage, HISTORY_KEY);
+    const history: AssessmentResult[] = historyRaw
       ? JSON.parse(historyRaw)
       : [];
     history.unshift(result);
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-  } catch {
-    // localStorage unavailable
+    await secureStorage.setItem(localStorage, HISTORY_KEY, JSON.stringify(history));
+  } catch (e) {
+    console.warn("[AssessmentContext] saveToHistory failed:", e);
   }
 }
 

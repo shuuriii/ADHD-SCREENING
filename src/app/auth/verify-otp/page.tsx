@@ -6,7 +6,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 function VerifyOtpForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("next") || "/assessment/intake";
+  const rawNext = searchParams.get("next") || "/assessment/intake";
+  // Prevent open redirect: only allow relative paths within the app
+  const redirectTo = (!rawNext.startsWith("/") || rawNext.startsWith("//") || rawNext.includes("://"))
+    ? "/assessment/intake"
+    : rawNext;
   const [digits, setDigits] = useState(["", "", "", "", "", ""]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -104,7 +108,7 @@ function VerifyOtpForm() {
         </p>
       </div>
 
-      <div className="flex justify-center gap-2 mb-6" onPaste={handlePaste}>
+      <div className="flex justify-center gap-2 mb-6" onPaste={handlePaste} role="group" aria-label="6-digit verification code">
         {digits.map((digit, i) => (
           <input
             key={i}
@@ -115,6 +119,8 @@ function VerifyOtpForm() {
             value={digit}
             onChange={(e) => handleChange(i, e.target.value)}
             onKeyDown={(e) => handleKeyDown(i, e)}
+            aria-label={`Digit ${i + 1} of 6`}
+            autoComplete="one-time-code"
             className="w-11 h-13 text-center text-xl font-semibold border-2 border-border rounded-xl focus:border-primary-500 focus:ring-2 focus:ring-primary-500 focus:outline-none transition-all"
           />
         ))}

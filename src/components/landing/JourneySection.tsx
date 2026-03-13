@@ -12,7 +12,7 @@ const STEPS = [
   {
     emoji: "📋",
     title: "Take the Questionnaire",
-    desc: "DSM-5 or ASRS — clinically validated, ~10 min",
+    desc: "DSM-5 clinically validated questionnaire, ~10 min",
   },
   {
     emoji: "🎮",

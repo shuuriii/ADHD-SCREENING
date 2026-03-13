@@ -16,13 +16,15 @@ export default function ContextQuestion({
   onChange,
 }: ContextQuestionProps) {
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3" role="radiogroup" aria-label="Select an option">
       {options.map((opt) => {
         const isSelected = value === opt.value;
         return (
           <motion.button
             key={opt.value}
             type="button"
+            role="radio"
+            aria-checked={isSelected}
             onClick={() => onChange(questionId, opt.value)}
             whileTap={{ scale: 0.97 }}
             animate={

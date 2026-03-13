@@ -23,7 +23,7 @@ export default function MyReportPage() {
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setBundle(getBundle());
+    getBundle().then(setBundle);
   }, []);
 
   const avatar = bundle?.userData.petPreference

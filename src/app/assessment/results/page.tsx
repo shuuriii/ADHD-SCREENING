@@ -10,15 +10,15 @@ import PresentationTypeCard from "@/components/results/PresentationType";
 import DSM5CriteriaCard from "@/components/results/DSM5Criteria";
 import GenderInsights from "@/components/results/GenderInsights";
 import Recommendations from "@/components/results/Recommendations";
+import Disclaimer from "@/components/results/Disclaimer";
 import FocusTaskCard from "@/components/results/FocusTaskCard";
 import ChronosTaskCard from "@/components/results/ChronosTaskCard";
 import FocusQuestCard from "@/components/results/FocusQuestCard";
 import PDFDownloadButton from "@/components/report/PDFDownloadButton";
 import Button from "@/components/ui/Button";
 import { RotateCcw, Gamepad2 } from "lucide-react";
-import { saveQuestionnaireResult } from "@/lib/supabase/questionnaire-results";
-import { createClient, supabaseConfigured } from "@/lib/supabase/client";
 import { saveQuestionnaireToBundle } from "@/lib/report-bundle";
+import { saveQuestionnaireViaAPI } from "@/lib/api-client";
 import type { AssessmentResult } from "@/questionnaire/types";
 
 const PresentationPieChart = dynamic(
@@ -88,12 +88,10 @@ export default function ResultsPage() {
     savedRef.current = true;
     // Save to unified report bundle (local)
     saveQuestionnaireToBundle("dsm5", activeResult);
-    // Save questionnaire result to Supabase once on mount (fire-and-forget)
+    // Save questionnaire result via server-side API (fire-and-forget)
     const sessionId = localStorage.getItem("fayth-session-id");
-    if (sessionId && supabaseConfigured) {
-      createClient().auth.getUser().then(({ data }) => {
-        saveQuestionnaireResult(activeResult, sessionId, data.user?.id ?? null);
-      });
+    if (sessionId) {
+      saveQuestionnaireViaAPI(sessionId, activeResult);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeResult]);
@@ -185,6 +183,7 @@ export default function ResultsPage() {
         />
       )}
 
+      <Disclaimer />
       <GenderInsights insights={activeResult.interpretation?.genderInsights ?? []} />
       <Recommendations items={activeResult.interpretation?.recommendations ?? []} />
 
@@ -209,7 +208,7 @@ export default function ResultsPage() {
               attention, impulse control, and time perception. Takes about 15 minutes total.
             </p>
             <a
-              href="/assessment/chronos-task"
+              href="/assessment/focus-task"
               className="inline-flex items-center justify-center rounded-xl font-medium px-6 py-3 text-base min-h-[44px] bg-[#fbbf24] text-foreground border-2 border-foreground shadow-[3px_3px_0_#1a2410] hover:shadow-[4px_4px_0_#1a2410] hover:-translate-x-px hover:-translate-y-px active:shadow-[1px_1px_0_#1a2410] active:translate-x-0.5 active:translate-y-0.5 transition-all duration-150"
             >
                 <Gamepad2 size={16} className="mr-2" />

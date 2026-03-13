@@ -40,7 +40,7 @@ class ErrorBoundary extends Component<Props, State> {
             An unexpected error occurred. Your assessment data is safe — try
             refreshing the page.
           </p>
-          {this.state.errorMessage && (
+          {process.env.NODE_ENV === "development" && this.state.errorMessage && (
             <pre className="text-xs text-red-500 bg-red-50 rounded-lg p-3 mb-6 max-w-md overflow-auto text-left whitespace-pre-wrap">
               {this.state.errorMessage}
             </pre>

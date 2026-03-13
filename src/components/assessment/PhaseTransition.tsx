@@ -15,8 +15,16 @@ export default function PhaseTransition({
   onComplete,
 }: PhaseTransitionProps) {
   const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
   const calledRef = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  useEffect(() => {
+    containerRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -28,18 +36,32 @@ export default function PhaseTransition({
     return () => clearTimeout(timer);
   }, []);
 
+  const dismiss = () => {
+    if (!calledRef.current) {
+      calledRef.current = true;
+      onCompleteRef.current();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      dismiss();
+    }
+  };
+
   return (
     <motion.div
+      ref={containerRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-primary-100 via-primary-50 to-white cursor-pointer"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      onClick={() => {
-        if (!calledRef.current) {
-          calledRef.current = true;
-          onCompleteRef.current();
-        }
-      }}
+      onClick={dismiss}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      role="dialog"
+      aria-label={title}
     >
       <div className="text-center px-6">
         <motion.div
@@ -52,7 +74,7 @@ export default function PhaseTransition({
           </h2>
           <p className="text-muted text-lg">{subtitle}</p>
           <p className="text-xs text-muted/50 mt-6">
-            Tap anywhere to continue
+            Tap or press Enter to continue
           </p>
         </motion.div>
       </div>

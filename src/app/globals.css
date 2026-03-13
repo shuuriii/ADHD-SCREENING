@@ -12,7 +12,7 @@
   --color-primary-800: #265820;
   --color-primary-900: #1e471a;
 
-  --color-calm-blue: #fef08a;
+  --color-calm-blue: #93c5fd;
   --color-calm-teal: #bbf7d0;
   --color-calm-warm: #fde68a;
   --color-calm-neutral: #f3faf1;
@@ -24,7 +24,7 @@
 
   --color-background: #fffef8;
   --color-foreground: #1a2410;
-  --color-muted: #5c7055;
+  --color-muted: #4d6147;
   --color-border: #d8ecd2;
 
   --font-sans: var(--font-geist-sans);
@@ -98,6 +98,11 @@ body {
 @keyframes brain-pulse {
   0%, 100% { transform: scale(1); }
   50%       { transform: scale(1.04); }
+}
+
+@keyframes fillBar {
+  from { width: 0% }
+  to { width: 100% }
 }
 
 @media (prefers-reduced-motion: reduce) {

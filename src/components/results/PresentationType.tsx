@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { PresentationResult, ASRSPresentationResult } from "@/questionnaire/types";
+import type { PresentationResult } from "@/questionnaire/types";
 
 const typeColors: Record<string, string> = {
   combined: "border-l-severity-high",
@@ -15,7 +15,7 @@ const typeColors: Record<string, string> = {
 export default function PresentationTypeCard({
   result,
 }: {
-  result: PresentationResult | ASRSPresentationResult;
+  result: PresentationResult;
 }) {
   return (
     <motion.div

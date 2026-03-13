@@ -5,6 +5,7 @@ import ValueProposition from "@/components/landing/ValueProposition";
 import GamesSection from "@/components/landing/GamesSection";
 import CTASection from "@/components/landing/CTASection";
 import Header from "@/components/ui/Header";
+import Footer from "@/components/ui/Footer";
 import SoundToggleWrapper from "@/components/landing/SoundToggleWrapper";
 import CursorGlow from "@/components/ui/CursorGlow";
 
@@ -19,6 +20,7 @@ export default function LandingPage() {
       <ValueProposition />
       <GamesSection />
       <CTASection />
+      <Footer />
       <SoundToggleWrapper />
     </main>
   );
